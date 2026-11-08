@@ -11,6 +11,26 @@ Vexloci is an end-to-end autonomous video production engine designed to compile 
 
 ---
 
+## Visual Showcase // Engine Output Demo
+
+![Vexloci Forensic Video Engine 10s Demo](docs/assets/vexloci_demo_10s.gif)
+
+> *10-second multi-scene sequence compiled by Vexloci showing automated forensic document highlighting, terminal opcode replay, candlestick market crash charts, and transnational GeoIP trace mapping. Full 1080p sample available at [`docs/assets/vexloci_demo_10s.mp4`](docs/assets/vexloci_demo_10s.mp4).*
+
+### Flagship Forensic Templates
+
+| Forensic Evidence Docket | Terminal Replay & Opcode Exec |
+| :---: | :---: |
+| ![Forensic Document](docs/assets/preview_forensic_document.png) | ![Terminal Replay](docs/assets/preview_terminal_replay.png) |
+| *Unsealed evidence exhibits with kinetic chisel highlighters & case stamps* | *Syntax-highlighted terminal sessions & execution telemetry* |
+
+| Candlestick Market Crash | Transnational GeoIP Routing |
+| :---: | :---: |
+| ![Market Crash](docs/assets/preview_market_crash.png) | ![GeoIP Trace Map](docs/assets/preview_geoip_trace.png) |
+| *SVG financial candlestick plunges & real-time liquidity ledgers* | *Vector geospatial route vectors & hop coordinates* |
+
+---
+
 ## Key Highlights
 
 - **Hardcoded 8–12 Minute Long-Form Documentaries:** Generates a universal 24-scene forensic arc across 6 acts (~1,250–1,450 words) delivering 9.5 to 11.2 minutes of immersive narrative runtime.
