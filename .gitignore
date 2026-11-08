@@ -40,6 +40,7 @@ video_silent.mp4
 test_*.png
 *.wav
 *.mp4
+!docs/assets/*.mp4
 
 # Private Production Data (Kept Local)
 content/
