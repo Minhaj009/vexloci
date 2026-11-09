@@ -77,7 +77,7 @@ export const CameraRig: React.FC<CameraRigProps> = ({ scene, children }) => {
     }
   }
 
-  const finalScale = Math.min(1.025, baseScale * zoomMultiplier);
+  const finalScale = Math.min(1.018, baseScale * zoomMultiplier);
   const finalTransX = basePanX + currentPanX + shakeX;
   const finalTransY = basePanY + currentPanY + shakeY;
 

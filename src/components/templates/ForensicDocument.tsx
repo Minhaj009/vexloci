@@ -123,24 +123,62 @@ export const ForensicDocument: React.FC<ForensicDocumentProps> = ({ scene }) => 
                     }}
                   >
                     <AlertTriangle className="w-3.5 h-3.5 text-amber-700" />
-                    CRITICAL TYPO // $20M BLOCKED
+                    {props.stampText || 'KEY FORENSIC TRIGGER'}
                   </span>
                 )}
               </div>
 
               <p className="text-xl font-serif text-slate-800 leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
-                Hackers routed a twenty-million-dollar transfer instruction to the Shalika Foundation, but intermediary routing halted when clerks noticed the attackers{' '}
-                <span className="relative inline-block px-1.5 py-0.5 mx-1 font-bold text-slate-900 bg-[#FEF08A] border-b-2 border-amber-400 rounded-xs">
-                  misspelled foundation as 'fandation'
-                </span>
-                , blocking execution before funds could settle.
+                {(() => {
+                  const pText = props.paragraphs?.[0] || liftedText;
+                  const phrases = props.highlightPhrases || [];
+                  if (phrases.length === 0) return pText;
+                  let parts: (string | React.ReactNode)[] = [pText];
+                  for (const phrase of phrases) {
+                    if (!phrase) continue;
+                    const nextParts: (string | React.ReactNode)[] = [];
+                    for (const part of parts) {
+                      if (typeof part !== 'string') {
+                        nextParts.push(part);
+                        continue;
+                      }
+                      const lowerPart = part.toLowerCase();
+                      const lowerPhrase = phrase.toLowerCase();
+                      const idx = lowerPart.indexOf(lowerPhrase);
+                      if (idx === -1) {
+                        nextParts.push(part);
+                      } else {
+                        if (idx > 0) nextParts.push(part.substring(0, idx));
+                        const match = part.substring(idx, idx + phrase.length);
+                        nextParts.push(
+                          <span
+                            key={`${phrase}-${idx}`}
+                            className="relative inline-block px-1.5 py-0.5 mx-1 font-bold text-slate-900 bg-[#FEF08A] border-b-2 border-amber-400 rounded-xs"
+                          >
+                            {match}
+                          </span>
+                        );
+                        if (idx + phrase.length < part.length) {
+                          nextParts.push(part.substring(idx + phrase.length));
+                        }
+                      }
+                    }
+                    parts = nextParts;
+                  }
+                  return parts;
+                })()}
               </p>
             </div>
 
             <div className="space-y-3 max-w-5xl">
-              <p className="text-sm font-serif text-[#475569] leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
-                The subsequent emergency audit by Bangladesh Bank and the Federal Reserve Bank of New York prevented an additional $850 million in fraudulent SWIFT transfers from clearing.
-              </p>
+              {(props.paragraphs && props.paragraphs.length > 1
+                ? props.paragraphs.slice(1)
+                : []
+              ).map((p, pIdx) => (
+                <p key={pIdx} className="text-sm font-serif text-[#475569] leading-relaxed" style={{ fontFamily: 'Georgia, serif' }}>
+                  {p}
+                </p>
+              ))}
             </div>
           </div>
 

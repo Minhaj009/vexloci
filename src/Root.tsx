@@ -5,6 +5,11 @@ import { loadFont as loadJetBrainsMono } from '@remotion/google-fonts/JetBrainsM
 import { loadFont as loadNewsreader } from '@remotion/google-fonts/Newsreader';
 import { MainForensicComposition } from './MainComposition';
 import { ShortForensicComposition } from './ShortComposition';
+import { OptionA_AceternityBento } from './components/candidates/OptionA_AceternityBento';
+import { OptionB_LinearPlanes } from './components/candidates/OptionB_LinearPlanes';
+import { OptionC_StudioGlass } from './components/candidates/OptionC_StudioGlass';
+import { Design2026_AppleMinimal } from './components/candidates/Design2026_AppleMinimal';
+import { Design2026_AceternityV2 } from './components/candidates/Design2026_AceternityV2';
 import {
   SceneData,
   ShortCompositionData,
@@ -121,6 +126,46 @@ export const Root: React.FC = () => {
             height: 1920,
           };
         }}
+      />
+      <Composition
+        id="DesignCandidateA"
+        component={OptionA_AceternityBento}
+        durationInFrames={120}
+        fps={30}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="DesignCandidateB"
+        component={OptionB_LinearPlanes}
+        durationInFrames={120}
+        fps={30}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="DesignCandidateC"
+        component={OptionC_StudioGlass}
+        durationInFrames={120}
+        fps={30}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="Design2026AppleMinimal"
+        component={Design2026_AppleMinimal}
+        durationInFrames={120}
+        fps={30}
+        width={1920}
+        height={1080}
+      />
+      <Composition
+        id="Design2026AceternityV2"
+        component={Design2026_AceternityV2}
+        durationInFrames={120}
+        fps={30}
+        width={1920}
+        height={1080}
       />
     </>
   );

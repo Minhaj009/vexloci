@@ -71,8 +71,13 @@
   - **Strict Invariant**: Use auto-wrapped two-line SVG text or increase inter-block spacing so connector badges never clip or overflow borders.
 - **No Burned-In Subtitles for Long-Form 16:9 Broadcast**:
   - **Trigger**: Rendering long-form broadcast video in `MainComposition.tsx`.
-  - **Anti-Pattern`: Burning hardcoded subtitle badges/captions onto the bottom of 16:9 video when native YouTube CC (`subtitles.srt`) is provided, cluttering the lower viewport and colliding with diagrams/HUDs.
-  - **Strict Invariant`: Long-form 16:9 video must remain completely clean of burned-in subtitles, letting YouTube handle native Closed Captions via `subtitles.srt`. (Burned captions remain strictly reserved for vertical 9:16 Shorts where native CC is absent).
+  - **Anti-Pattern**: Burning hardcoded subtitle badges/captions onto the bottom of 16:9 video when native YouTube CC (`subtitles.srt`) is provided, cluttering the lower viewport and colliding with diagrams/HUDs.
+  - **Strict Invariant**: Long-form 16:9 video must remain completely clean of burned-in subtitles, letting YouTube handle native Closed Captions via `subtitles.srt`. (Burned captions remain strictly reserved for vertical 9:16 Shorts where native CC is absent).
+- **Full Canvas Expansion & Modern Bento Component Architecture (No Clunky Wireframes)**:
+  - **Trigger**: Redesigning UI components for 2026 modern minimalist aesthetic (Aceternity UI, 21st.dev, useplanes).
+  - **Anti-Pattern**: Retaining clunky 2018 box geometry, squished `w-[1540px]` widths, and `mb-12` margins (leaving giant empty margins on screen), merely swapping hex colors without redesigning component anatomy, anchor sockets, and canvas space.
+  - **Strict Invariant**: Always expand the scene container to `1800x960px` with 60px viewport margins. Rebuild cards as rich Bento components with anchor socket ports on card borders, embedded squircle icons, radial-masked dot grids, and 100% geometric alignment where connectors dock directly into ports and badge centers.
+
 
 
 
