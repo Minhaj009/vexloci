@@ -3,7 +3,6 @@ import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 import {
   Activity,
   Building,
-  Cpu,
   Layers,
   Server,
   ShieldAlert,
@@ -90,17 +89,17 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
   const radarLeadY = centerY + 480 * Math.sin(radarRad);
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-[#07090E] select-none">
-      <div className="backdrop-blur-md bg-[#080A0F]/90 border-b border-[#1E2536] px-10 py-4 absolute top-0 left-0 right-0 z-20 flex items-center justify-between">
+    <div className="relative w-full h-full overflow-hidden bg-[#F8FAFC] select-none">
+      <div className="backdrop-blur-md bg-white/95 border-b border-slate-200 px-10 py-4 absolute top-0 left-0 right-0 z-20 flex items-center justify-between text-slate-900 shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-lg bg-[#07090E] border border-border text-primary">
+          <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-600">
             <Layers className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[10px] font-mono tracking-widest text-muted-foreground uppercase">
+            <span className="text-[10px] font-mono tracking-widest text-slate-500 uppercase">
               TOPOLOGICAL RECONSTRUCTION // ENTITY MAP
             </span>
-            <h2 className="text-xl font-heading font-bold text-foreground">
+            <h2 className="text-xl font-heading font-bold text-slate-900">
               Global Liquidity & Threat Routing Mesh
             </h2>
           </div>
@@ -108,14 +107,14 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
 
         <div className="flex items-center gap-4 text-xs font-mono">
           <Badge variant="mono">
-            NODES: <strong className="text-primary ml-1">{props.nodes.length}</strong>
+            NODES: <strong className="text-blue-600 ml-1">{props.nodes.length}</strong>
           </Badge>
           <Badge variant="mono">
-            EDGES: <strong className="text-primary ml-1">{props.edges.length}</strong>
+            EDGES: <strong className="text-blue-600 ml-1">{props.edges.length}</strong>
           </Badge>
           <Badge
             variant={isFault ? 'destructive' : 'cyan'}
-            className={cn('font-bold', isFault && 'animate-pulse shadow-[0_0_15px_rgba(255,42,84,0.5)]')}
+            className={cn('font-bold', isFault && 'animate-pulse')}
           >
             {isFault ? 'CRITICAL SYSTEM BREACH' : 'MESH ENCRYPTED'}
           </Badge>
@@ -123,18 +122,19 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
       </div>
 
       <div className="absolute top-[88px] left-10 right-10 bottom-28 flex gap-6">
-        <div className="relative flex-1 rounded-xl bg-[#080B12]/90 border border-border/80 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+        <div className="relative flex-1 rounded-2xl bg-white border border-slate-200/90 overflow-hidden shadow-[0_4px_24px_rgba(15,23,42,0.04)]">
           <svg className="w-full h-full overflow-visible" viewBox={`0 0 ${width} ${height}`}>
             <defs>
               <radialGradient id="threatGlow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor={isFault ? '#FF2A54' : '#00F5D4'} stopOpacity="0.12" />
-                <stop offset="100%" stopColor={isFault ? '#FF2A54' : '#00F5D4'} stopOpacity="0.0" />
+                <stop offset="0%" stopColor={isFault ? '#DC2626' : '#2563EB'} stopOpacity={0.06} />
+                <stop offset="100%" stopColor={isFault ? '#DC2626' : '#2563EB'} stopOpacity={0.0} />
               </radialGradient>
               <pattern id="meshGrid" width="50" height="50" patternUnits="userSpaceOnUse">
-                <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#1E2536" strokeWidth="0.5" strokeOpacity="0.35" />
+                <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#E2E8F0" strokeWidth="0.8" strokeOpacity="0.8" />
               </pattern>
             </defs>
 
+            <rect width={width} height={height} fill="#F8FAFC" />
             <rect width={width} height={height} fill="url(#meshGrid)" />
             <circle cx={centerX} cy={centerY} r={460} fill="url(#threatGlow)" />
 
@@ -145,9 +145,8 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
                 cy={centerY}
                 r={r}
                 fill="none"
-                stroke={isFault ? '#FF2A54' : '#00F5D4'}
+                stroke="#E2E8F0"
                 strokeWidth={1}
-                strokeOpacity={0.16}
                 strokeDasharray="4 6"
               />
             ))}
@@ -157,9 +156,8 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
               y1={centerY}
               x2={centerX + 480}
               y2={centerY}
-              stroke={isFault ? '#FF2A54' : '#00F5D4'}
-              strokeWidth={0.8}
-              strokeOpacity={0.2}
+              stroke="#E2E8F0"
+              strokeWidth={1}
               strokeDasharray="3 3"
             />
             <line
@@ -167,9 +165,8 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
               y1={centerY - 480}
               x2={centerX}
               y2={centerY + 480}
-              stroke={isFault ? '#FF2A54' : '#00F5D4'}
-              strokeWidth={0.8}
-              strokeOpacity={0.2}
+              stroke="#E2E8F0"
+              strokeWidth={1}
               strokeDasharray="3 3"
             />
 
@@ -178,10 +175,9 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
               y1={centerY}
               x2={radarLeadX}
               y2={radarLeadY}
-              stroke={isFault ? '#FF2A54' : '#00F5D4'}
+              stroke="#3B82F6"
               strokeWidth={1.5}
-              strokeOpacity={0.7}
-              style={{ filter: `drop-shadow(0 0 6px ${isFault ? '#FF2A54' : '#00F5D4'})` }}
+              strokeOpacity={0.4}
             />
 
             {props.edges.map((edge, idx) => {
@@ -198,16 +194,16 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
               const oneMinusT = 1 - photonRatio;
               const dotX = oneMinusT * oneMinusT * p1.x + 2 * oneMinusT * photonRatio * midX + photonRatio * photonRatio * p2.x;
               const dotY = oneMinusT * oneMinusT * p1.y + 2 * oneMinusT * photonRatio * midY + photonRatio * photonRatio * p2.y;
-              const edgeColor = isFault ? '#FF2A54' : '#00F5D4';
+              const edgeColor = isFault ? '#DC2626' : '#2563EB';
 
               return (
                 <g key={`${edge.from}-${edge.to}-${idx}`}>
                   <path
                     d={d}
                     fill="none"
-                    stroke="#1E2536"
+                    stroke="#CBD5E1"
                     strokeWidth="2"
-                    strokeOpacity="0.8"
+                    strokeOpacity="0.9"
                   />
                   <path
                     d={d}
@@ -216,9 +212,6 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
                     strokeWidth="2.5"
                     strokeDasharray="6 28"
                     strokeDashoffset={packetOffset}
-                    style={{
-                      filter: `drop-shadow(0 0 6px ${edgeColor})`,
-                    }}
                   />
 
                   <circle
@@ -226,7 +219,6 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
                     cy={dotY}
                     r={3.5}
                     fill={edgeColor}
-                    style={{ filter: `drop-shadow(0 0 6px ${edgeColor})` }}
                   />
 
                   {edge.label && (
@@ -236,15 +228,15 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
                         y="-10"
                         width="96"
                         height="20"
-                        rx="10"
-                        fill="#0A0E17"
-                        stroke="#1E2536"
+                        rx="6"
+                        fill="#FFFFFF"
+                        stroke="#CBD5E1"
                         strokeWidth="1"
                       />
                       <text
                         y="4"
                         textAnchor="middle"
-                        fill="#94A3B8"
+                        fill="#475569"
                         fontSize="9"
                         fontFamily="JetBrains Mono"
                         fontWeight="bold"
@@ -263,30 +255,28 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
 
               const isCompromised =
                 node.status === 'compromised' || (isFault && node.type === 'server');
-              const nodeGlow = isCompromised ? '#FF2A54' : '#00F5D4';
+              const nodeStroke = isCompromised ? '#DC2626' : '#2563EB';
+              const nodeFill = isCompromised ? '#FEF2F2' : '#FFFFFF';
               const pulseScale = isCompromised ? 1 + Math.sin(frame * 0.25) * 0.08 : 1;
 
               return (
                 <g
                   key={node.id}
                   transform={`translate(${pos.x}, ${pos.y}) scale(${appearProgress * pulseScale})`}
-                  style={{
-                    filter: `drop-shadow(0 0 14px ${nodeGlow})`,
-                  }}
                 >
                   <circle
                     r="46"
                     fill="none"
-                    stroke={nodeGlow}
+                    stroke={nodeStroke}
                     strokeWidth="1.2"
                     strokeDasharray="4 4"
-                    strokeOpacity={0.6}
+                    strokeOpacity={0.4}
                   />
 
                   <circle
                     r="30"
-                    fill="#080A0F"
-                    stroke={nodeGlow}
+                    fill={nodeFill}
+                    stroke={nodeStroke}
                     strokeWidth="2.5"
                   />
 
@@ -294,7 +284,7 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
                     <div
                       className={cn(
                         'w-full h-full flex items-center justify-center',
-                        isCompromised ? 'text-destructive' : 'text-primary'
+                        isCompromised ? 'text-rose-600' : 'text-blue-600'
                       )}
                     >
                       {getNodeIcon(node.type)}
@@ -304,7 +294,7 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
                   <text
                     y="48"
                     textAnchor="middle"
-                    fill="#F1F5F9"
+                    fill="#0F172A"
                     fontSize="12"
                     fontFamily="Space Grotesk"
                     fontWeight="bold"
@@ -315,7 +305,7 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
                   <text
                     y="64"
                     textAnchor="middle"
-                    fill={isCompromised ? '#FF2A54' : '#94A3B8'}
+                    fill={isCompromised ? '#DC2626' : '#64748B'}
                     fontSize="9"
                     fontFamily="JetBrains Mono"
                   >
@@ -327,19 +317,19 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
           </svg>
         </div>
 
-        <Card className="relative w-[380px] bg-[#080B12]/95 border-border/80 flex flex-col justify-between overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+        <Card className="relative w-[380px] bg-white border border-slate-200/90 rounded-2xl shadow-[0_4px_24px_rgba(15,23,42,0.04)] text-slate-900 flex flex-col justify-between overflow-hidden">
           <BorderBeam
             size={220}
             duration={10}
-            colorFrom={isFault ? '#FF2A54' : '#00F5D4'}
-            colorTo={isFault ? '#F59E0B' : '#3B82F6'}
+            colorFrom={isFault ? '#DC2626' : '#2563EB'}
+            colorTo={isFault ? '#F59E0B' : '#60A5FA'}
           />
 
-          <CardHeader className="p-4 border-b border-border/80 bg-[#06080D]">
+          <CardHeader className="p-4 border-b border-slate-200 bg-slate-50/70">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 text-primary" />
-                <CardTitle className="text-sm font-mono tracking-wider uppercase">
+                <ShieldAlert className="w-4 h-4 text-blue-600" />
+                <CardTitle className="text-sm font-mono tracking-wider uppercase text-slate-900">
                   TELEMETRY OVERWATCH
                 </CardTitle>
               </div>
@@ -350,27 +340,27 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
           </CardHeader>
 
           <CardContent className="p-4 flex-1 flex flex-col justify-between gap-4 font-mono text-xs">
-            <Card className="p-3 rounded-lg bg-[#06080D] border-border">
-              <div className="text-[10px] text-muted-foreground tracking-widest uppercase">
+            <Card className="p-3 rounded-xl bg-slate-50 border-slate-200">
+              <div className="text-[10px] text-slate-500 tracking-widest uppercase">
                 ACTIVE COMPROMISED NODES
               </div>
-              <div className="text-2xl font-mono font-black mt-1 text-destructive drop-shadow-[0_0_12px_rgba(255,42,84,0.6)]">
+              <div className="text-2xl font-mono font-black mt-1 text-rose-600">
                 <NumberTicker
                   value={compromisedCount}
                   startValue={0}
                   durationFrames={30}
                 />
-                <span className="text-sm text-muted-foreground font-normal ml-1">
+                <span className="text-sm text-slate-500 font-normal ml-1">
                   / {props.nodes.length} CLUSTERS
                 </span>
               </div>
             </Card>
 
-            <Card className="p-3 rounded-lg bg-[#06080D] border-border">
-              <div className="text-[10px] text-muted-foreground tracking-widest uppercase">
+            <Card className="p-3 rounded-xl bg-slate-50 border-slate-200">
+              <div className="text-[10px] text-slate-500 tracking-widest uppercase">
                 PACKET THROUGHPUT RATE
               </div>
-              <div className="text-2xl font-mono font-black mt-1 text-primary drop-shadow-[0_0_10px_rgba(0,245,212,0.5)]">
+              <div className="text-2xl font-mono font-black mt-1 text-blue-600">
                 <NumberTicker
                   value={isFault ? 842100 : 124500}
                   startValue={98000}
@@ -381,42 +371,42 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
               <div className="mt-2">
                 <Progress
                   value={isFault ? 98 : 34}
-                  className="h-1.5 bg-surface border border-border"
-                  indicatorClassName={isFault ? 'bg-destructive shadow-[0_0_8px_#FF2A54]' : 'bg-primary'}
+                  className="h-1.5 bg-slate-200 border border-slate-200"
+                  indicatorClassName={isFault ? 'bg-rose-600' : 'bg-blue-600'}
                 />
               </div>
             </Card>
 
             <div className="space-y-2 text-[11px]">
-              <div className="flex items-center justify-between text-muted-foreground">
+              <div className="flex items-center justify-between text-slate-500">
                 <span>MESH ENCRYPTION SYNC</span>
-                <span className={isFault ? 'text-destructive font-bold' : 'text-primary'}>
+                <span className={isFault ? 'text-rose-600 font-bold' : 'text-blue-600'}>
                   {isFault ? 'UNROUTED (42.6%)' : '99.98% NOMINAL'}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-muted-foreground">
+              <div className="flex items-center justify-between text-slate-500">
                 <span>COMPROMISE SEVERITY</span>
                 <Badge variant={isFault ? 'destructive' : 'cyan'} className="text-[9px] py-0">
                   {isFault ? 'CRITICAL BREACH' : 'LEVEL 1 CLEAR'}
                 </Badge>
               </div>
-              <div className="flex items-center justify-between text-muted-foreground">
+              <div className="flex items-center justify-between text-slate-500">
                 <span>CORE INGESTION LATENCY</span>
-                <span className="font-mono text-foreground">
+                <span className="font-mono text-slate-900 font-medium">
                   {isFault ? '148.6ms (SPIKE)' : '4.2ms (OPTICAL)'}
                 </span>
               </div>
             </div>
 
-            <Card className="p-2.5 rounded-lg bg-[#06080D] border-border text-[10px] text-muted-foreground">
+            <Card className="p-2.5 rounded-xl bg-slate-50 border-slate-200 text-[10px] text-slate-600">
               <div className="flex items-center justify-between mb-1 font-bold">
                 <span className="flex items-center gap-1.5">
-                  <Activity className="w-3 h-3 text-primary" />
-                  <span>LATERAL INTRUSION LOG</span>
+                  <Activity className="w-3 h-3 text-blue-600" />
+                  <span className="text-slate-800">LATERAL INTRUSION LOG</span>
                 </span>
-                <span className="text-border">LIVE</span>
+                <span className="text-slate-400">LIVE</span>
               </div>
-              <div className="truncate">
+              <div className="truncate text-slate-600">
                 {isFault
                   ? '0x99A -> UNCHECKED_ROUTER_CALL (RPC 445)'
                   : '0x01B -> SECURE_SOCKET_ACK (PORT 8443)'}

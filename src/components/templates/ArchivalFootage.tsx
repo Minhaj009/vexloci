@@ -27,7 +27,7 @@ export const ArchivalFootage: React.FC<ArchivalFootageProps> = ({ scene }) => {
     : null;
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-gradient-to-b from-[#111827] to-[#0B0F19]">
+    <div className="relative w-full h-full overflow-hidden bg-slate-100">
       {imageFallbackSrc && (
         <div className="absolute inset-0 w-full h-full">
           <Img
@@ -56,9 +56,9 @@ export const ArchivalFootage: React.FC<ArchivalFootageProps> = ({ scene }) => {
       </div>
 
       <div className="absolute top-10 left-16 z-20 pointer-events-none">
-        <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-md backdrop-blur-md bg-[#080A0F]/80 border border-[#00F5D4]/40 shadow-[0_4px_20px_rgba(0,0,0,0.6)]">
-          <span className="w-2 h-2 rounded-full bg-[#00F5D4]" />
-          <span className="text-[11px] font-mono font-bold tracking-wider text-[#00F5D4] uppercase">
+        <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-lg backdrop-blur-md bg-white/95 border border-slate-200 text-slate-700 shadow-sm">
+          <span className="w-2 h-2 rounded-full bg-blue-600" />
+          <span className="text-[11px] font-mono font-bold tracking-wider text-slate-700 uppercase">
             {props.licenseBadge || 'FREE ARCHIVAL ASSET // WIKIMEDIA COMMONS [PUBLIC DOMAIN / CC-BY-SA]'}
           </span>
         </div>
@@ -67,25 +67,25 @@ export const ArchivalFootage: React.FC<ArchivalFootageProps> = ({ scene }) => {
       <div
         className="absolute inset-0 pointer-events-none z-10"
         style={{
-          background: 'linear-gradient(to top, rgba(8,10,15,0.95) 0%, rgba(8,10,15,0.45) 30%, transparent 60%)',
+          background: 'linear-gradient(to top, rgba(15,23,42,0.45) 0%, rgba(15,23,42,0.15) 30%, transparent 60%)',
         }}
       />
 
       <div className="absolute left-16 bottom-28 z-20 pointer-events-none max-w-2xl">
-        <div className="backdrop-blur-xl bg-[#080A0F]/90 border border-white/10 rounded-xl p-5 shadow-[0_20px_50px_rgba(0,0,0,0.9)]">
+        <div className="backdrop-blur-xl bg-white/95 border border-slate-200 rounded-2xl p-6 text-slate-900 shadow-[0_10px_35px_rgba(0,0,0,0.08)]">
           <div className="flex items-center gap-2 mb-2">
-            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-widest bg-[#00F5D4]/15 border border-[#00F5D4]/40 text-[#00F5D4] uppercase">
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-widest bg-blue-50 border border-blue-200 text-blue-700 uppercase">
               {props.provenanceSource}
             </span>
           </div>
           <h3
-            className="text-2xl font-heading font-bold text-[#F1F5F9] leading-tight mb-1.5"
+            className="text-2xl font-heading font-bold text-slate-900 leading-tight mb-1.5"
             style={{ fontSize: `${24 * (props.fontScale ?? 1)}px` }}
           >
             {props.headline}
           </h3>
           <p
-            className="text-sm font-mono text-[#94A3B8] leading-relaxed"
+            className="text-sm font-sans text-slate-600 leading-relaxed"
             style={{ fontSize: `${13 * (props.fontScale ?? 1)}px` }}
           >
             {props.caption}

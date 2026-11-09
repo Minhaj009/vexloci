@@ -46,8 +46,8 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
   const blocksCount = props.blocks.length;
   const totalFrames = Math.max(1, Math.round(scene.durationSec * fps));
 
-  const gap = 115;
-  const blockWidth = 260;
+  const gap = 145;
+  const blockWidth = 240;
   const blockHeight = 150;
 
   const blockCoords = useMemo<Record<string, BlockCoord>>(() => {
@@ -72,17 +72,17 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
 
   return (
     <div className="relative w-full h-full flex items-center justify-center p-6 select-none">
-      <Card className="relative w-[1540px] bg-[#0E1526]/95 border border-slate-700/80 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.85)] p-7 overflow-hidden mb-12">
-        <CardHeader className="flex flex-row items-center justify-between pb-4 mb-4 border-b border-slate-800 p-0 space-y-0">
+      <Card className="relative w-[1540px] bg-white border border-slate-200/90 shadow-[0_4px_24px_rgba(0,0,0,0.04)] rounded-2xl p-7 overflow-hidden mb-12">
+        <CardHeader className="flex flex-row items-center justify-between pb-4 mb-4 border-b border-slate-200 p-0 space-y-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-[#090E1A] border border-slate-800 text-sky-400">
+            <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-200 text-blue-600">
               <Workflow className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase">
+              <span className="text-[10px] font-mono tracking-widest text-slate-500 uppercase">
                 ARCHITECTURAL BLUEPRINT // PIPELINE DEPLOYMENT
               </span>
-              <CardTitle className="text-xl font-heading font-extrabold text-slate-100 tracking-tight mt-0.5">
+              <CardTitle className="text-xl font-heading font-extrabold text-slate-900 tracking-tight mt-0.5">
                 {props.systemTitle}
               </CardTitle>
             </div>
@@ -94,8 +94,8 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
               className={cn(
                 'px-3 py-1 font-mono text-xs font-semibold tracking-wide border',
                 isFault
-                  ? 'bg-rose-950/60 border-rose-500/80 text-rose-300 animate-pulse'
-                  : 'bg-slate-900 border-slate-700 text-slate-300'
+                  ? 'bg-red-50 border-red-300 text-red-700 animate-pulse'
+                  : 'bg-slate-100 border-slate-200 text-slate-700'
               )}
             >
               {isFault ? 'FAULT TRIGGERED // RE-ENTRANT LOOP' : 'STATUS: OPERATIONAL'}
@@ -106,24 +106,24 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
         {faultProgress > 0 && (
           <Alert
             variant="destructive"
-            className="mb-4 bg-rose-950/40 border-rose-500/80 py-2.5 px-4 font-mono text-xs font-bold flex items-center gap-2.5"
+            className="mb-4 bg-red-50 border-red-300 py-2.5 px-4 font-mono text-xs font-bold flex items-center gap-2.5 text-red-800"
             style={{
               opacity: faultProgress,
               transform: `translateY(${(1 - faultProgress) * -10}px)`,
             }}
           >
-            <AlertOctagon className="w-4 h-4 animate-pulse text-rose-400" />
-            <span className="text-rose-200">
+            <AlertOctagon className="w-4 h-4 animate-pulse text-red-600" />
+            <span>
               {faultEvent?.payloadText || 'CRITICAL FAULT: UNCONTROLLED HIGH-FREQUENCY LOOP DETECTED'}
             </span>
           </Alert>
         )}
 
-        <div className="relative w-full h-[450px] rounded-xl bg-[#080D1A] border border-slate-800/90 overflow-hidden">
+        <div className="relative w-full h-[450px] rounded-xl bg-slate-50/70 border border-slate-200 overflow-hidden">
           <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox={`0 0 ${diagramWidth} ${diagramHeight}`}>
             <defs>
               <pattern id="blueprintGrid" width="36" height="36" patternUnits="userSpaceOnUse">
-                <path d="M 36 0 L 0 0 0 36" fill="none" stroke="#131F36" strokeWidth="0.8" />
+                <path d="M 36 0 L 0 0 0 36" fill="none" stroke="#E2E8F0" strokeWidth="0.8" />
               </pattern>
             </defs>
 
@@ -146,20 +146,26 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
               const x1 = src.x + src.width;
               const y1 = src.y + src.height / 2;
               const x2 = dst.x;
-              const y2 = dst.y + dst.height / 2;
               const midFlowX = (x1 + x2) / 2;
 
               const isFractured = Boolean(
                 isFault && (props.blocks.find((b) => b.id === flow.from)?.isFaultPoint || idx >= 1)
               );
-              const flowColor = isFractured ? '#EF4444' : '#38BDF8';
+              const flowColor = isFractured ? '#DC2626' : '#2563EB';
               const pulseOffset = (-frame * 2.2 + idx * 20) % 100;
 
               const photonRatio = ((frame * 0.025 + idx * 0.3) % 1);
               const dotX = x1 + (x2 - x1) * photonRatio;
 
               const labelText = isFractured ? 'FRACTURED' : (flow.label || '');
-              const pillWidth = Math.max(90, Math.min(gap - 8, labelText.length * 7.2 + 24));
+              const words = labelText.split(' ');
+              let line1 = labelText;
+              let line2 = '';
+              if (words.length >= 2 && labelText.length > 10) {
+                const mid = Math.ceil(words.length / 2);
+                line1 = words.slice(0, mid).join(' ');
+                line2 = words.slice(mid).join(' ');
+              }
 
               return (
                 <g key={idx} opacity={flowProgress}>
@@ -167,15 +173,15 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
                     x1={x1}
                     y1={y1}
                     x2={x2}
-                    y2={y2}
-                    stroke="#1E293B"
-                    strokeWidth="3"
+                    y2={y1}
+                    stroke="#CBD5E1"
+                    strokeWidth="2.5"
                   />
                   <line
                     x1={x1}
                     y1={y1}
                     x2={x2}
-                    y2={y2}
+                    y2={y1}
                     stroke={flowColor}
                     strokeWidth="2"
                     strokeDasharray={isFractured ? '4 4' : '8 12'}
@@ -185,33 +191,57 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
                   <circle
                     cx={dotX}
                     cy={y1}
-                    r={3}
+                    r={3.5}
                     fill={flowColor}
                   />
 
                   <g transform={`translate(${midFlowX}, ${y1 - 24})`}>
                     <rect
-                      x={-pillWidth / 2}
-                      y="-12"
-                      width={pillWidth}
-                      height="24"
-                      rx="12"
-                      fill="#0B1322"
+                      x="-48"
+                      y="-16"
+                      width="96"
+                      height="32"
+                      rx="8"
+                      fill="#FFFFFF"
                       stroke={flowColor}
                       strokeWidth="1.2"
-                      style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.6))' }}
+                      style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.06))' }}
                     />
-                    <text
-                      y="4"
-                      textAnchor="middle"
-                      fill={isFractured ? '#FCA5A5' : '#E2E8F0'}
-                      fontSize="9.5"
-                      fontFamily="JetBrains Mono"
-                      fontWeight="600"
-                      letterSpacing="0.3"
-                    >
-                      {labelText}
-                    </text>
+                    {line2 ? (
+                      <>
+                        <text
+                          y="-3"
+                          textAnchor="middle"
+                          fill={isFractured ? '#DC2626' : '#1E293B'}
+                          fontSize="9"
+                          fontFamily="JetBrains Mono"
+                          fontWeight="600"
+                        >
+                          {line1}
+                        </text>
+                        <text
+                          y="9"
+                          textAnchor="middle"
+                          fill={isFractured ? '#DC2626' : '#1E293B'}
+                          fontSize="9"
+                          fontFamily="JetBrains Mono"
+                          fontWeight="600"
+                        >
+                          {line2}
+                        </text>
+                      </>
+                    ) : (
+                      <text
+                        y="3"
+                        textAnchor="middle"
+                        fill={isFractured ? '#DC2626' : '#1E293B'}
+                        fontSize="9.5"
+                        fontFamily="JetBrains Mono"
+                        fontWeight="600"
+                      >
+                        {line1}
+                      </text>
+                    )}
                   </g>
                 </g>
               );
@@ -234,7 +264,7 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
                         cy={pos.y + pos.height / 2}
                         r={rippleRadius}
                         fill="none"
-                        stroke="#EF4444"
+                        stroke="#DC2626"
                         strokeWidth="1.8"
                         opacity={rippleOpacity}
                       />
@@ -266,8 +296,8 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
                 className={cn(
                   'absolute rounded-xl border p-4 flex flex-col justify-between transition-all overflow-hidden',
                   isFaultBlock
-                    ? 'bg-rose-950/70 border-rose-500/80 shadow-[0_10px_30px_rgba(239,68,68,0.25)]'
-                    : 'bg-[#0E1729]/95 border-slate-700/80 shadow-[0_10px_25px_rgba(0,0,0,0.5)]'
+                    ? 'bg-red-50/90 border-red-300 shadow-[0_4px_16px_rgba(220,38,38,0.15)] text-red-950'
+                    : 'bg-slate-50 border-slate-200 shadow-xs text-slate-900'
                 )}
                 style={{
                   left: `${pos.x}px`,
@@ -278,15 +308,15 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
                   transform: `scale(${blockScale})`,
                 }}
               >
-                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                  <Badge variant="mono" className="text-[9px] px-2 py-0.5 bg-slate-800/80 text-slate-300 border-0">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                  <Badge variant="mono" className="text-[9px] px-2 py-0.5 bg-slate-200/70 text-slate-700 border-0">
                     {block.id.toUpperCase()}
                   </Badge>
                   <Badge
                     variant={isFaultBlock ? 'destructive' : 'secondary'}
                     className={cn(
                       'text-[9px] font-mono font-semibold px-2 py-0.5 border-0',
-                      isFaultBlock ? 'bg-rose-900/80 text-rose-200 animate-pulse' : 'bg-slate-800 text-sky-400'
+                      isFaultBlock ? 'bg-red-200 text-red-900 animate-pulse' : 'bg-blue-100 text-blue-700'
                     )}
                   >
                     {isFaultBlock ? 'FAULT POINT' : 'OPERATIONAL'}
@@ -294,23 +324,23 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
                 </div>
 
                 <div className="my-1.5">
-                  <h4 className="text-[13px] font-heading font-bold text-slate-100 truncate">
+                  <h4 className="text-[13px] font-heading font-extrabold text-slate-900 truncate">
                     {block.title}
                   </h4>
-                  <p className="text-[10.5px] font-mono text-slate-400 truncate mt-0.5">
+                  <p className="text-[10.5px] font-mono text-slate-500 truncate mt-0.5">
                     {block.subtitle}
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-[10px] font-mono">
-                  <div className="flex items-center gap-1.5 text-slate-400">
-                    <Cpu className={cn('w-3.5 h-3.5', isFaultBlock ? 'text-rose-400' : 'text-sky-400')} />
+                <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-[10px] font-mono">
+                  <div className="flex items-center gap-1.5 text-slate-600">
+                    <Cpu className={cn('w-3.5 h-3.5', isFaultBlock ? 'text-red-600' : 'text-blue-600')} />
                     <span>SYS_BUS</span>
                   </div>
                   {isFaultBlock ? (
-                    <AlertOctagon className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+                    <AlertOctagon className="w-3.5 h-3.5 text-red-600 animate-pulse" />
                   ) : (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   )}
                 </div>
               </Card>

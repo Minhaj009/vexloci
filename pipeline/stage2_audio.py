@@ -183,7 +183,6 @@ def normalize_narration_for_tts(text: str) -> str:
     normalized = re.sub(r"\bNY Fed\b", "New York Fed", normalized)
     normalized = re.sub(r"\bRCBC's\b", "R. C. B. C.'s", normalized)
     normalized = re.sub(r"\bRCBC\b", "R. C. B. C.", normalized)
-    normalized = re.sub(r"\bSWIFT\b", "S. W. I. F. T.", normalized)
     normalized = re.sub(r"\bOFAC\b", "O. F. A. C.", normalized)
     normalized = re.sub(r"\bMT103\b", "M-T one-oh-three", normalized)
     normalized = re.sub(r"\bNOP\b", "no-operation", normalized)

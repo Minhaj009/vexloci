@@ -42,7 +42,7 @@ export const ParallaxCutout25D: React.FC<ParallaxCutout25DProps> = ({ scene }) =
     : null;
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-gradient-to-b from-[#111827] to-[#0A0F1A] select-none">
+    <div className="relative w-full h-full overflow-hidden bg-[#F8FAFC] select-none">
       <div
         className="absolute inset-0 will-change-transform overflow-hidden"
         style={{
@@ -52,21 +52,21 @@ export const ParallaxCutout25D: React.FC<ParallaxCutout25DProps> = ({ scene }) =
         {resolvedBgSrc ? (
           <Img
             src={resolvedBgSrc}
-            className="w-full h-full object-cover filter brightness-90"
+            className="w-full h-full object-cover filter brightness-95"
           />
         ) : (
           <div
-            className="w-full h-full"
+            className="w-full h-full bg-[#F1F5F9]"
             style={{
-              background: `radial-gradient(circle at 70% 50%, rgba(0,245,212,0.25) 0%, transparent 65%),
-                           linear-gradient(to right, #1A2338, #0E1524)`,
+              background: `radial-gradient(circle at 70% 50%, rgba(37,99,235,0.08) 0%, transparent 65%),
+                           linear-gradient(to right, #F8FAFC, #EDF2F7)`,
             }}
           />
         )}
         <div
-          className="absolute inset-0 opacity-35"
+          className="absolute inset-0 opacity-40"
           style={{
-            backgroundImage: `linear-gradient(rgba(50, 75, 120, 0.45) 1px, transparent 1px), linear-gradient(90deg, rgba(50, 75, 120, 0.45) 1px, transparent 1px)`,
+            backgroundImage: `linear-gradient(rgba(148, 163, 184, 0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.25) 1px, transparent 1px)`,
             backgroundSize: '40px 40px',
           }}
         />
@@ -75,7 +75,7 @@ export const ParallaxCutout25D: React.FC<ParallaxCutout25DProps> = ({ scene }) =
       <div
         className="absolute inset-0 pointer-events-none z-10"
         style={{
-          background: 'radial-gradient(ellipse at center, transparent 35%, rgba(7, 9, 14, 0.85) 100%)',
+          background: 'radial-gradient(ellipse at center, transparent 45%, rgba(248, 250, 252, 0.7) 100%)',
         }}
       />
 
@@ -89,31 +89,31 @@ export const ParallaxCutout25D: React.FC<ParallaxCutout25DProps> = ({ scene }) =
         {resolvedFgSrc ? (
           <Img
             src={resolvedFgSrc}
-            className="w-full h-[90%] object-contain object-bottom drop-shadow-[0_20px_50px_rgba(0,0,0,0.95)]"
+            className="w-full h-[90%] object-contain object-bottom drop-shadow-[0_20px_40px_rgba(15,23,42,0.12)]"
           />
         ) : (
-          <div className="relative w-[420px] h-[640px] mb-12 rounded-2xl bg-[#0F1420]/85 border-2 border-[#00F5D4]/40 shadow-[0_0_50px_rgba(0,245,212,0.25)] overflow-hidden flex flex-col items-center justify-center p-8">
+          <div className="relative w-[420px] h-[640px] mb-12 rounded-2xl bg-white border border-slate-200 shadow-[0_10px_35px_rgba(0,0,0,0.06)] overflow-hidden flex flex-col items-center justify-center p-8">
             <div className="relative z-10 flex flex-col items-center">
-              <div className="w-48 h-48 rounded-full border-2 border-[#00F5D4]/60 bg-[#080A0F] flex items-center justify-center p-3 shadow-[0_0_30px_rgba(0,245,212,0.35)]">
-                <div className="w-full h-full rounded-full border border-dashed border-[#00F5D4]/40 flex items-center justify-center text-[#00F5D4]">
+              <div className="w-48 h-48 rounded-full border-2 border-slate-200 bg-slate-50 flex items-center justify-center p-3 text-blue-600">
+                <div className="w-full h-full rounded-full border border-dashed border-blue-300 flex items-center justify-center text-blue-600">
                   <UserCheck className="w-24 h-24 opacity-90" />
                 </div>
               </div>
 
               <div className="mt-8 text-center">
-                <span className="px-3.5 py-1 rounded-full text-[11px] font-mono font-bold tracking-widest bg-[#00F5D4]/15 border border-[#00F5D4]/40 text-[#00F5D4]">
+                <span className="px-3.5 py-1 rounded-full text-[11px] font-mono font-bold tracking-widest bg-blue-50 border border-blue-200 text-blue-700">
                   SUBJECT RECORD IDENTIFIED
                 </span>
-                <div className="text-2xl font-heading font-bold text-[#F1F5F9] mt-3">
+                <div className="text-2xl font-heading font-bold text-slate-900 mt-3">
                   {props.subjectName}
                 </div>
-                <div className="text-sm font-mono text-[#94A3B8] mt-1">
+                <div className="text-sm font-mono text-slate-500 mt-1">
                   {props.subjectRole}
                 </div>
               </div>
             </div>
 
-            <div className="absolute bottom-4 left-6 right-6 flex items-center justify-between text-[11px] font-mono text-[#94A3B8]/80 border-t border-[#1E2536] pt-3">
+            <div className="absolute bottom-4 left-6 right-6 flex items-center justify-between text-[11px] font-mono text-slate-500 border-t border-slate-200 pt-3">
               <span>FACIAL RECOGNITION: 99.4%</span>
               <span>BIOMETRIC HASH // #8F22</span>
             </div>
@@ -128,46 +128,46 @@ export const ParallaxCutout25D: React.FC<ParallaxCutout25DProps> = ({ scene }) =
           opacity: Math.max(0, dossierProgress),
         }}
       >
-        <div className="w-full backdrop-blur-xl bg-[#080A0F]/90 border border-white/10 rounded-2xl p-10 shadow-[0_35px_70px_rgba(0,0,0,0.95)]">
-          <div className="flex items-center justify-between pb-4 mb-6 border-b border-[#1E2536]">
+        <div className="w-full backdrop-blur-xl bg-white/95 border border-slate-200 rounded-2xl p-10 text-slate-900 shadow-[0_10px_35px_rgba(0,0,0,0.06)]">
+          <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded bg-[#0E131F] border border-[#1E2536] text-[#00F5D4]">
+              <div className="p-2 rounded bg-blue-50 border border-blue-200 text-blue-600">
                 <Shield className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-[10px] font-mono tracking-widest text-[#94A3B8]">
+                <span className="text-[10px] font-mono tracking-widest text-slate-500">
                   CONFIDENTIAL TESTIMONY // DOSSIER EXHIBIT
                 </span>
-                <div className="text-xs font-mono font-semibold text-[#00F5D4]">
+                <div className="text-xs font-mono font-semibold text-blue-600">
                   CHAIN OF CUSTODY VERIFIED
                 </div>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <Fingerprint className="w-5 h-5 text-[#94A3B8]" />
-              <span className="text-[10px] font-mono text-[#94A3B8]">
+              <Fingerprint className="w-5 h-5 text-slate-400" />
+              <span className="text-[10px] font-mono text-slate-500">
                 ID: #SEC-KCG-{props.subjectName.replace(/\s+/g, '_').toUpperCase().slice(0, 8)}
               </span>
             </div>
           </div>
 
           <div className="relative mb-8">
-            <Quote className="w-10 h-10 text-[#00F5D4]/25 absolute -top-4 -left-4" />
+            <Quote className="w-10 h-10 text-[#2563EB]/20 absolute -top-4 -left-4" />
             <p
-              className="relative z-10 text-3xl font-serif italic leading-relaxed text-[#F1F5F9]/95 pl-6"
+              className="relative z-10 text-3xl font-serif italic leading-relaxed text-[#0F172A] pl-6"
               style={{ fontSize: `${26 * (props.fontScale ?? 1)}px` }}
             >
               "{props.quoteOrFact}"
             </p>
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-[#1E2536] text-xs font-mono">
+          <div className="flex items-center justify-between pt-4 border-t border-slate-200 text-xs font-mono">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#00F5D4] animate-pulse" />
-              <span className="text-[#94A3B8]">DEPOSITION ADMISSIBLE UNDER RULE 803</span>
+              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+              <span className="text-slate-600">DEPOSITION ADMISSIBLE UNDER RULE 803</span>
             </div>
-            <span className="text-[#00F5D4] font-bold">STATUS: ARCHIVED</span>
+            <span className="text-blue-600 font-bold">STATUS: ARCHIVED</span>
           </div>
         </div>
       </div>

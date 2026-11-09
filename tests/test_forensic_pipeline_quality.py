@@ -118,7 +118,7 @@ class TestForensicPipelineQuality(unittest.TestCase):
         )
         self.assertEqual(
             normalize_narration_for_tts("SWIFT"),
-            "S. W. I. F. T.",
+            "SWIFT",
         )
         self.assertEqual(
             normalize_narration_for_tts("OFAC"),
@@ -151,7 +151,6 @@ class TestForensicPipelineQuality(unittest.TestCase):
         self.assertIn("Fandation", word_texts)
         self.assertNotIn("fandation", word_texts)
 
-        # Also test 4-token spelled out sequence: 'R', '.C', '.B', '.C'
         words_spelled = [
             {"word": "The", "startSec": 10.0, "endSec": 10.2},
             {"word": "R", "startSec": 10.2, "endSec": 10.4},

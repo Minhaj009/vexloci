@@ -1,9 +1,7 @@
 import React, { useMemo } from 'react';
 import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import {
-  Activity,
   AlertTriangle,
-  ArrowDownRight,
   BarChart3,
   TrendingDown,
 } from 'lucide-react';
@@ -108,8 +106,7 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
   const pingRadius = 6 + pingPhase * 24;
   const pingOpacity = 1 - pingPhase;
 
-  const activeStrokeColor = isCrash ? '#FF2A54' : '#00F5D4';
-  const activeGlowColor = isCrash ? 'rgba(255, 42, 84, 0.7)' : 'rgba(0, 245, 212, 0.7)';
+  const activeStrokeColor = isCrash ? '#DC2626' : '#2563EB';
 
   const thresholdY = padTop + plotHeight * 0.72;
   const isBlink = Math.floor(frame / 12) % 2 === 0;
@@ -133,15 +130,15 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
   ];
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-[#07090E] select-none">
-      <div className="absolute top-0 left-0 right-0 z-20 backdrop-blur-md bg-[#080A0F]/90 border-b border-[#1E2536] px-10 py-4 flex items-center justify-between">
+    <div className="relative w-full h-full overflow-hidden bg-[#F8FAFC] select-none">
+      <div className="absolute top-0 left-0 right-0 z-20 backdrop-blur-md bg-white/95 border-b border-slate-200 px-10 py-4 flex items-center justify-between text-slate-900 shadow-xs">
         <div className="flex items-center gap-4">
           <div
             className={cn(
-              'p-2.5 rounded-lg bg-[#07090E] border transition-colors duration-300',
+              'p-2.5 rounded-lg border transition-colors duration-300',
               isCrash
-                ? 'border-destructive text-destructive shadow-[0_0_15px_rgba(255,42,84,0.4)]'
-                : 'border-border text-primary shadow-[0_0_12px_rgba(0,245,212,0.3)]'
+                ? 'bg-red-50 border-red-200 text-red-600'
+                : 'bg-slate-100 border-slate-200 text-slate-800'
             )}
           >
             <TrendingDown className="w-6 h-6" />
@@ -151,15 +148,15 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
               <Badge variant="cyan" className="font-mono text-xs font-bold px-2 py-0.5">
                 {props.tickerSymbol}
               </Badge>
-              <span className="text-xs font-mono tracking-widest text-muted-foreground uppercase">
+              <span className="text-xs font-mono tracking-widest text-slate-500 uppercase">
                 {props.metricName}
               </span>
-              <Badge variant="outline" className="font-mono text-[10px] text-muted-foreground border-border bg-[#0B0F17]">
+              <Badge variant="outline" className="font-mono text-[10px] text-slate-500 border-slate-200 bg-slate-50">
                 LIVE FEED // 30 FPS
               </Badge>
             </div>
             <div className="flex items-baseline gap-3 mt-1">
-              <h2 className="text-2xl font-mono font-bold text-foreground tracking-tight">
+              <h2 className="text-2xl font-mono font-bold text-slate-900 tracking-tight">
                 {props.unit}
                 {currentVal.toFixed(2)}
               </h2>
@@ -178,17 +175,17 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
             variant={isCrash ? 'destructive' : 'default'}
             className={cn(
               'px-3 py-1 font-mono text-xs uppercase tracking-wider',
-              isCrash && 'animate-pulse shadow-[0_0_18px_rgba(255,42,84,0.6)]'
+              isCrash && 'animate-pulse'
             )}
           >
             {isCrash ? 'CIRCUIT BREAKER // TRADING HALT' : 'REAL-TIME EXECUTION FEED'}
           </Badge>
 
           <div className="text-right font-mono flex flex-col items-end">
-            <span className="text-[10px] tracking-widest text-muted-foreground">
+            <span className="text-[10px] tracking-widest text-slate-500">
               {props.lossLabel ? props.lossLabel.toUpperCase() : 'CUMULATIVE CAPITAL LOSS'}
             </span>
-            <span className="text-2xl font-mono font-black text-destructive drop-shadow-[0_0_12px_rgba(255,42,84,0.8)]">
+            <span className="text-2xl font-mono font-black text-rose-600">
               -{props.currencyPrefix || props.unit}
               {isCrash && crashFrame >= 0 ? (
                 <NumberTicker
@@ -206,22 +203,23 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
       </div>
 
       <div className="absolute top-[88px] left-10 right-10 bottom-28 flex gap-6">
-        <div className="relative flex-1 rounded-xl bg-[#080B12]/90 border border-border/80 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+        <div className="relative flex-1 rounded-2xl bg-white border border-slate-200/90 overflow-hidden shadow-[0_4px_24px_rgba(15,23,42,0.04)]">
           <svg className="w-full h-full overflow-visible" viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
             <defs>
               <linearGradient id="marketChartFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={activeStrokeColor} stopOpacity={isCrash ? 0.42 : 0.22} />
+                <stop offset="0%" stopColor={activeStrokeColor} stopOpacity={isCrash ? 0.16 : 0.12} />
                 <stop offset="100%" stopColor={activeStrokeColor} stopOpacity={0.0} />
               </linearGradient>
               <linearGradient id="crashFloodGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#FF2A54" stopOpacity="0.25" />
-                <stop offset="100%" stopColor="#FF2A54" stopOpacity="0.0" />
+                <stop offset="0%" stopColor="#DC2626" stopOpacity={0.08} />
+                <stop offset="100%" stopColor="#DC2626" stopOpacity={0.0} />
               </linearGradient>
               <pattern id="bloombergGrid" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1E2536" strokeWidth="0.6" strokeOpacity="0.35" />
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#E2E8F0" strokeWidth="0.8" strokeOpacity="0.8" />
               </pattern>
             </defs>
 
+            <rect x={padLeft} y={padTop} width={plotWidth} height={plotHeight} fill="#F8FAFC" />
             <rect x={padLeft} y={padTop} width={plotWidth} height={plotHeight} fill="url(#bloombergGrid)" />
 
             {[0, 0.25, 0.5, 0.75, 1.0].map((ratio) => {
@@ -234,16 +232,15 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
                     y1={y}
                     x2={padLeft + plotWidth}
                     y2={y}
-                    stroke="#1E2536"
+                    stroke="#E2E8F0"
                     strokeDasharray="4 4"
                     strokeWidth="1"
-                    strokeOpacity="0.6"
                   />
                   <text
                     x={padLeft - 14}
                     y={y + 4}
                     textAnchor="end"
-                    fill="#94A3B8"
+                    fill="#64748B"
                     fontSize="11"
                     fontFamily="JetBrains Mono"
                   >
@@ -271,10 +268,9 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
                 y1={thresholdY}
                 x2={padLeft + plotWidth}
                 y2={thresholdY}
-                stroke="#FF2A54"
+                stroke="#EF4444"
                 strokeWidth="1.8"
                 strokeDasharray="6 4"
-                style={{ filter: 'drop-shadow(0 0 8px #FF2A54)' }}
               />
               <rect
                 x={padLeft + plotWidth - 270}
@@ -282,20 +278,20 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
                 width={260}
                 height={24}
                 rx={4}
-                fill="#0A0D14"
-                stroke="#FF2A54"
+                fill="#FFFFFF"
+                stroke="#FCA5A5"
                 strokeWidth="1.2"
               />
               <text
                 x={padLeft + plotWidth - 140}
                 y={thresholdY + 3}
                 textAnchor="middle"
-                fill="#FF2A54"
+                fill="#DC2626"
                 fontSize="10"
                 fontFamily="JetBrains Mono"
                 fontWeight="bold"
                 letterSpacing="1px"
-                opacity={isBlink ? 1 : 0.4}
+                opacity={isBlink ? 1 : 0.5}
               >
                 LIQUIDATION THRESHOLD // MARGIN CALL
               </text>
@@ -320,9 +316,6 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
               strokeWidth="3.5"
               strokeDasharray={totalLength}
               strokeDashoffset={strokeDashoffset}
-              style={{
-                filter: `drop-shadow(0px 0px 14px ${activeGlowColor})`,
-              }}
             />
 
             {coords.map((pt, i) => (
@@ -332,23 +325,22 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
                   y1={padTop}
                   x2={pt.x}
                   y2={padTop + plotHeight}
-                  stroke="#1E2536"
+                  stroke="#E2E8F0"
                   strokeDasharray="3 3"
-                  strokeOpacity="0.3"
                 />
                 <circle
                   cx={pt.x}
                   cy={pt.y}
                   r={i === currentIdx ? 6 : i >= props.crashIndex ? 4.5 : 3.5}
-                  fill={i >= props.crashIndex && isCrash ? '#FF2A54' : '#00F5D4'}
-                  stroke="#07090E"
+                  fill={i >= props.crashIndex && isCrash ? '#DC2626' : '#2563EB'}
+                  stroke="#FFFFFF"
                   strokeWidth="2"
                 />
                 <text
                   x={pt.x}
                   y={padTop + plotHeight + 24}
                   textAnchor="middle"
-                  fill="#94A3B8"
+                  fill="#64748B"
                   fontSize="11"
                   fontFamily="JetBrains Mono"
                 >
@@ -370,7 +362,7 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
                       cy={crashCoord.y}
                       r={ringRadius}
                       fill="none"
-                      stroke="#FF2A54"
+                      stroke="#DC2626"
                       strokeWidth="1.8"
                       opacity={ringOpacity}
                     />
@@ -394,9 +386,8 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
                 cy={currentY}
                 r="6.5"
                 fill={activeStrokeColor}
-                stroke="#07090E"
+                stroke="#FFFFFF"
                 strokeWidth="2.5"
-                style={{ filter: `drop-shadow(0 0 12px ${activeGlowColor})` }}
               />
               <circle cx={currentX} cy={currentY} r="2.5" fill="#FFFFFF" />
             </g>
@@ -404,21 +395,21 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
 
           {calloutProgress > 0 && (
             <div
-              className="absolute top-6 right-6 bg-[#0D111A]/95 border-2 border-destructive rounded-xl px-6 py-4 shadow-[0_0_40px_rgba(255,42,84,0.6)] z-30 max-w-sm"
+              className="absolute top-6 right-6 bg-white border-2 border-red-500 rounded-2xl px-6 py-4 shadow-[0_10px_35px_rgba(220,38,38,0.15)] z-30 max-w-sm"
               style={{
                 transform: `scale(${calloutProgress})`,
                 opacity: calloutProgress,
               }}
             >
-              <div className="flex items-center gap-2 text-destructive font-mono font-bold text-xs">
+              <div className="flex items-center gap-2 text-rose-600 font-mono font-bold text-xs">
                 <AlertTriangle className="w-4 h-4 animate-pulse" />
                 <span>CIRCUIT BREAKER TRIGGERED</span>
               </div>
-              <div className="text-xl font-mono font-black text-destructive mt-1 drop-shadow-[0_0_12px_rgba(255,42,84,0.8)]">
+              <div className="text-xl font-mono font-black text-rose-600 mt-1">
                 {calloutEvent?.payloadText ||
                   `-${props.currencyPrefix || props.unit}${maxTargetLoss.toLocaleString()} CAPITAL LOSS`}
               </div>
-              <div className="text-[10px] font-mono text-muted-foreground mt-1 uppercase">
+              <div className="text-[10px] font-mono text-slate-500 mt-1 uppercase">
                 {props.metricName
                   ? `${props.metricName.toUpperCase()} // BREACH OF CAPITAL CONTROLS`
                   : 'LIQUIDATION EVENT // CAPITAL DEPLETION'}
@@ -427,19 +418,19 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
           )}
         </div>
 
-        <Card className="relative w-[380px] bg-[#080B12]/95 border-border/80 flex flex-col justify-between overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+        <Card className="relative w-[380px] bg-white border border-slate-200/90 rounded-2xl shadow-[0_4px_24px_rgba(15,23,42,0.04)] flex flex-col justify-between overflow-hidden">
           <BorderBeam
             size={220}
             duration={10}
-            colorFrom={isCrash ? '#FF2A54' : '#00F5D4'}
-            colorTo={isCrash ? '#F59E0B' : '#3B82F6'}
+            colorFrom={isCrash ? '#DC2626' : '#2563EB'}
+            colorTo={isCrash ? '#F59E0B' : '#60A5FA'}
           />
 
-          <CardHeader className="p-4 border-b border-border/80 bg-[#06080D]">
+          <CardHeader className="p-4 border-b border-slate-200 bg-slate-50/70">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-primary" />
-                <CardTitle className="text-sm font-mono tracking-wider uppercase">
+                <BarChart3 className="w-4 h-4 text-blue-600" />
+                <CardTitle className="text-sm font-mono tracking-wider uppercase text-slate-900">
                   ORDER BOOK DEPTH
                 </CardTitle>
               </div>
@@ -451,7 +442,7 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
 
           <CardContent className="p-4 flex-1 flex flex-col justify-between gap-3 text-xs font-mono">
             <div>
-              <div className="text-[10px] text-muted-foreground tracking-wider mb-1 flex justify-between">
+              <div className="text-[10px] text-slate-500 tracking-wider mb-1 flex justify-between">
                 <span>ASK PRICE ({props.unit})</span>
                 <span>VOLUME</span>
               </div>
@@ -459,25 +450,25 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
                 {askDepths.map((ask, idx) => (
                   <div key={idx} className="relative flex items-center justify-between px-2 py-0.5 rounded overflow-hidden">
                     <div
-                      className="absolute inset-y-0 right-0 bg-destructive/15 transition-all duration-200"
+                      className="absolute inset-y-0 right-0 bg-rose-50 transition-all duration-200"
                       style={{ width: `${ask.pct}%` }}
                     />
-                    <span className="relative z-10 text-destructive font-medium">{ask.price}</span>
-                    <span className="relative z-10 text-muted-foreground text-[10px]">{ask.size}</span>
+                    <span className="relative z-10 text-rose-700 font-medium">{ask.price}</span>
+                    <span className="relative z-10 text-slate-500 text-[10px]">{ask.size}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="flex items-center justify-between py-1.5 px-3 rounded bg-[#06080D] border border-border my-1 font-mono text-[11px]">
-              <span className="text-muted-foreground">SPREAD</span>
+            <div className="flex items-center justify-between py-1.5 px-3 rounded bg-slate-50 border border-slate-200 my-1 font-mono text-[11px]">
+              <span className="text-slate-500">SPREAD</span>
               <Badge variant={isCrash ? 'destructive' : 'cyan'} className="text-[10px] font-mono py-0">
                 {isCrash ? 'ILLIQUID // NO BIDS' : '$0.02 (0.02%)'}
               </Badge>
             </div>
 
             <div>
-              <div className="text-[10px] text-muted-foreground tracking-wider mb-1 flex justify-between">
+              <div className="text-[10px] text-slate-500 tracking-wider mb-1 flex justify-between">
                 <span>BID PRICE ({props.unit})</span>
                 <span>VOLUME</span>
               </div>
@@ -485,26 +476,26 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
                 {bidDepths.map((bid, idx) => (
                   <div key={idx} className="relative flex items-center justify-between px-2 py-0.5 rounded overflow-hidden">
                     <div
-                      className="absolute inset-y-0 right-0 bg-primary/15 transition-all duration-200"
+                      className="absolute inset-y-0 right-0 bg-blue-50 transition-all duration-200"
                       style={{ width: `${bid.pct}%` }}
                     />
-                    <span className="relative z-10 text-primary font-medium">{bid.price}</span>
-                    <span className="relative z-10 text-muted-foreground text-[10px]">{bid.size}</span>
+                    <span className="relative z-10 text-blue-700 font-medium">{bid.price}</span>
+                    <span className="relative z-10 text-slate-500 text-[10px]">{bid.size}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="p-3 rounded-lg bg-[#06080D] border border-border space-y-1.5 mt-1">
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 mt-1">
+              <div className="flex items-center justify-between text-[10px] text-slate-500">
                 <span>BID LIQUIDITY DRAIN</span>
-                <span className={cn('font-bold', isCrash ? 'text-destructive' : 'text-primary')}>
+                <span className={cn('font-bold', isCrash ? 'text-rose-600' : 'text-blue-600')}>
                   {isCrash ? '-96.4%' : 'NOMINAL'}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+              <div className="flex items-center justify-between text-[10px] text-slate-500">
                 <span>EXECUTION FREQUENCY</span>
-                <span className="font-bold text-foreground">
+                <span className="font-bold text-slate-900">
                   <NumberTicker
                     value={isCrash ? 14200 : 820}
                     startValue={450}

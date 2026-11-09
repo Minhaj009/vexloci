@@ -7,13 +7,13 @@ const alertVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-background text-foreground border-border',
+        default: 'bg-white text-slate-900 border-slate-200 shadow-sm',
         destructive:
-          'border-destructive/50 text-destructive bg-destructive/15 [&>svg]:text-destructive',
+          'border-red-200 text-red-700 bg-red-50 [&>svg]:text-red-600',
         warning:
-          'border-warning/50 text-warning bg-warning/15 [&>svg]:text-warning',
+          'border-amber-200 text-amber-800 bg-amber-50 [&>svg]:text-amber-600',
         cyan:
-          'border-[#00F5D4]/50 text-[#00F5D4] bg-[#00F5D4]/15 [&>svg]:text-[#00F5D4]',
+          'border-sky-200 text-sky-800 bg-sky-50 [&>svg]:text-sky-600',
       },
     },
     defaultVariants: {
@@ -41,7 +41,7 @@ const AlertTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <h5
     ref={ref}
-    className={cn('mb-1 font-medium leading-none tracking-tight', className)}
+    className={cn('mb-1 font-medium leading-none tracking-tight text-slate-900', className)}
     {...props}
   />
 ));
@@ -53,7 +53,7 @@ const AlertDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn('text-sm [&_p]:leading-relaxed', className)}
+    className={cn('text-sm text-slate-600 [&_p]:leading-relaxed', className)}
     {...props}
   />
 ));

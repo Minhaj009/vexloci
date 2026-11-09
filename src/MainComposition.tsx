@@ -3,7 +3,6 @@ import { Series } from 'remotion';
 import { SceneData, TimelineData } from './schemas/timeline.schema';
 import { AtmosphericStage } from './components/shared/AtmosphericStage';
 import { ForensicHUD } from './components/shared/ForensicHUD';
-import { KineticCaption } from './components/shared/KineticCaption';
 import { CameraRig } from './components/shared/CameraRig';
 import { FilmGrainOverlay } from './components/shared/FilmGrainOverlay';
 import { ForensicDocument } from './components/templates/ForensicDocument';
@@ -70,7 +69,7 @@ export const MainForensicComposition: React.FC<MainCompositionProps> = (props) =
         return <EndScreenOutro scene={scene} />;
       default:
         return (
-          <div className="flex items-center justify-center w-full h-full text-text-muted font-mono">
+          <div className="flex items-center justify-center w-full h-full text-slate-500 font-mono">
             UNKNOWN TEMPLATE
           </div>
         );
@@ -78,21 +77,20 @@ export const MainForensicComposition: React.FC<MainCompositionProps> = (props) =
   };
 
   return (
-    <div className="w-[1920px] h-[1080px] bg-canvas text-text-primary overflow-hidden relative select-none">
+    <div className="w-[1920px] h-[1080px] bg-[#F8FAFC] text-slate-900 overflow-hidden relative select-none">
       <Series>
         {timeline.scenes.map((scene) => {
           const durationInFrames = Math.max(1, Math.round(scene.durationSec * timeline.fps));
 
           return (
             <Series.Sequence key={scene.sceneId} durationInFrames={durationInFrames}>
-              <div className="relative w-full h-full overflow-hidden bg-canvas">
+              <div className="relative w-full h-full overflow-hidden bg-[#F8FAFC]">
                 <AtmosphericStage scene={scene} timeline={timeline} />
                 <CameraRig scene={scene}>
                   {renderTemplate(scene)}
                 </CameraRig>
                 <ForensicHUD scene={scene} timeline={timeline} />
-                <KineticCaption scene={scene} />
-                <FilmGrainOverlay opacity={0.08} />
+                <FilmGrainOverlay opacity={0.02} />
               </div>
             </Series.Sequence>
           );

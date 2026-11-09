@@ -109,7 +109,7 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
           connY = slotY + cardHeight / 2;
         }
       } else {
-        if (wy < 540) {
+        if (wy < 440) {
           const i = quadCounts.TR++;
           slotX = 1480;
           slotY = 160 + i * 140;

@@ -1,8 +1,8 @@
 import React from 'react';
 import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
-import { Clock, History, Timer, Zap } from 'lucide-react';
+import { Clock, History } from 'lucide-react';
 import { ChronoTickingClockPropsSchema, SceneData } from '../../schemas/timeline.schema';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { BorderBeam } from '../ui/border-beam';
 import { cn } from '../../lib/utils';
@@ -55,23 +55,23 @@ export const ChronoTickingClock: React.FC<ChronoTickingClockProps> = ({ scene })
 
   return (
     <div
-      className="relative w-full h-full flex items-center justify-center p-6 select-none"
+      className="relative w-full h-full flex items-center justify-center p-6 select-none bg-[#F8FAFC]"
       style={{ perspective: '1400px', transformStyle: 'preserve-3d' }}
     >
       <Card
-        className="relative w-[1540px] bg-[#0A0D14]/95 border-border/80 rounded-2xl shadow-[0_30px_70px_rgba(0,0,0,0.95)] p-7 overflow-hidden mb-12"
+        className="relative w-[1540px] bg-white border border-slate-200/90 rounded-2xl shadow-[0_4px_24px_rgba(15,23,42,0.04)] text-slate-900 p-7 overflow-hidden mb-12"
         style={{ transform: 'rotateX(3deg)' }}
       >
-        <CardHeader className="flex flex-row items-center justify-between pb-4 mb-4 border-b border-border/80 p-0 space-y-0">
+        <CardHeader className="flex flex-row items-center justify-between pb-4 mb-4 border-b border-slate-200 p-0 space-y-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-lg bg-[#07090E] border border-border text-primary">
+            <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-600">
               <Clock className="w-6 h-6" />
             </div>
             <div>
-              <span className="text-[10px] font-mono tracking-widest text-muted-foreground uppercase">
+              <span className="text-[10px] font-mono tracking-widest text-slate-500 uppercase">
                 TEMPORAL DISSECTION // MISSION EVENT SCRUBBER
               </span>
-              <CardTitle className="text-xl font-heading font-bold text-foreground">
+              <CardTitle className="text-xl font-heading font-bold text-slate-900">
                 Chronological Attack Timeline
               </CardTitle>
             </div>
@@ -85,15 +85,15 @@ export const ChronoTickingClock: React.FC<ChronoTickingClockProps> = ({ scene })
           </div>
         </CardHeader>
 
-        <Card className="my-4 p-5 rounded-xl bg-[#06080D] border border-border/80 flex items-center justify-between shadow-inner relative overflow-hidden">
+        <Card className="my-4 p-5 rounded-xl bg-slate-50/80 border border-slate-200 flex items-center justify-between shadow-xs relative overflow-hidden">
           <div className="flex items-center gap-5">
             <svg width="140" height="140" viewBox="0 0 140 140" className="overflow-visible">
               <circle
                 cx="70"
                 cy="70"
                 r="64"
-                fill="#080B12"
-                stroke="#1E2536"
+                fill="#F8FAFC"
+                stroke="#CBD5E1"
                 strokeWidth="1.5"
               />
               <circle
@@ -101,9 +101,9 @@ export const ChronoTickingClock: React.FC<ChronoTickingClockProps> = ({ scene })
                 cy="70"
                 r="48"
                 fill="none"
-                stroke="#00F5D4"
+                stroke="#2563EB"
                 strokeWidth="1"
-                strokeOpacity="0.2"
+                strokeOpacity="0.25"
                 strokeDasharray="3 3"
               />
 
@@ -123,7 +123,7 @@ export const ChronoTickingClock: React.FC<ChronoTickingClockProps> = ({ scene })
                     y1={y1}
                     x2={x2}
                     y2={y2}
-                    stroke={isMajor ? '#00F5D4' : '#1E2536'}
+                    stroke={isMajor ? '#2563EB' : '#CBD5E1'}
                     strokeWidth={isMajor ? 1.8 : 0.9}
                   />
                 );
@@ -134,24 +134,24 @@ export const ChronoTickingClock: React.FC<ChronoTickingClockProps> = ({ scene })
                 y1="70"
                 x2={handX}
                 y2={handY}
-                stroke="#00F5D4"
-                strokeWidth="2"
-                style={{ filter: 'drop-shadow(0 0 6px #00F5D4)' }}
+                stroke="#2563EB"
+                strokeWidth="2.2"
               />
 
-              <circle cx="70" cy="70" r="4" fill="#00F5D4" stroke="#080B12" strokeWidth="1.5" />
+              <circle cx="70" cy="70" r="4" fill="#D97706" stroke="#FFFFFF" strokeWidth="1.5" />
             </svg>
 
             <div>
-              <span className="text-[10px] font-mono tracking-widest text-muted-foreground uppercase">
+              <span className="text-[10px] font-mono tracking-widest text-slate-500 uppercase">
                 ATOMIC FORENSIC CLOCK // UTC ZERO SKEW
               </span>
               <div className="flex items-baseline gap-3 mt-1">
-                <span className="text-xl font-mono font-bold text-muted-foreground">
+                <span className="text-xl font-mono font-bold text-slate-500">
                   {formattedDate} //
                 </span>
-                <span className="text-4xl font-mono font-black text-primary drop-shadow-[0_0_20px_rgba(0,245,212,0.7)] tracking-tight">
-                  {formattedTime}
+                <span className="text-4xl font-mono font-black text-[#0F172A] tracking-tight">
+                  <span className="text-blue-600">{formattedTime.slice(0, 8)}</span>
+                  <span className="text-slate-500 text-2xl">{formattedTime.slice(8)}</span>
                 </span>
               </div>
             </div>
@@ -171,9 +171,9 @@ export const ChronoTickingClock: React.FC<ChronoTickingClockProps> = ({ scene })
         </Card>
 
         <div className="relative pt-2">
-          <div className="relative w-full h-2 rounded-full bg-[#11151F] border border-border mb-6 overflow-hidden">
+          <div className="relative w-full h-2 rounded-full bg-slate-100 border border-slate-200 mb-6 overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-[#00F5D4] via-[#F59E0B] to-[#FF2A54] shadow-[0_0_10px_#00F5D4]"
+              className="h-full bg-gradient-to-r from-blue-600 via-amber-500 to-red-600 shadow-xs"
               style={{ width: `${progressRatio * 100}%` }}
             />
           </div>
@@ -198,25 +198,25 @@ export const ChronoTickingClock: React.FC<ChronoTickingClockProps> = ({ scene })
                   className={cn(
                     'relative overflow-hidden p-4 rounded-xl border transition-all duration-300 flex flex-col justify-between',
                     isReached
-                      ? 'bg-[#0E1524]/95 border-primary shadow-[0_0_25px_rgba(0,245,212,0.2)]'
-                      : 'bg-[#080B12]/80 border-border/80 opacity-60'
+                      ? 'bg-blue-50/70 border-blue-300 text-slate-900 shadow-xs'
+                      : 'bg-slate-50 border-slate-200 text-slate-600 opacity-75'
                   )}
                 >
                   {isCurrent && (
                     <BorderBeam
                       size={160}
                       duration={6}
-                      colorFrom="#00F5D4"
-                      colorTo="#3B82F6"
+                      colorFrom="#2563EB"
+                      colorTo="#60A5FA"
                     />
                   )}
 
                   <div>
-                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-border/70">
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/80">
                       <span
                         className={cn(
                           'text-xs font-mono font-bold',
-                          isReached ? 'text-primary' : 'text-muted-foreground'
+                          isReached ? 'text-blue-700' : 'text-slate-500'
                         )}
                       >
                         {m.timeLabel}
@@ -229,11 +229,11 @@ export const ChronoTickingClock: React.FC<ChronoTickingClockProps> = ({ scene })
                       </Badge>
                     </div>
 
-                    <h4 className="text-sm font-heading font-bold text-foreground mb-1">
+                    <h4 className="text-sm font-heading font-bold text-slate-900 mb-1">
                       {m.eventTitle}
                     </h4>
 
-                    <p className="text-[11px] font-mono text-muted-foreground leading-relaxed">
+                    <p className="text-[11px] font-mono text-slate-600 leading-relaxed">
                       {m.detail}
                     </p>
                   </div>

@@ -53,4 +53,26 @@
   - **Trigger**: Rendering `EndScreenOutro` and recommended video cards.
   - **Anti-Pattern**: Displaying generic disc placeholders without official channel identity.
   - **Strict Invariant**: Feature official VEXLOCI monogram, typography, and channel dossier badge styled in the clean editorial color scheme of the documentary.
+- **Pronounce Acronyms By Standard Linguistic Convention (SWIFT as Word, Not Letters)**:
+  - **Trigger**: Normalizing text for TTS in `stage2_audio.py`.
+  - **Anti-Pattern**: Spacing acronyms that are conventionally spoken as full words (e.g. expanding `"SWIFT"` into `"S. W. I. F. T."`).
+  - **Strict Invariant**: Only space out true initialisms where each letter is pronounced individually (e.g. `"RCBC"`, `"OFAC"`). Acronyms pronounced as regular English words (e.g. `"SWIFT"`, `"NASDAQ"`, `"FINCEN"`, `"INTERPOL"`) must remain natural words.
+- **Camera Safety & Zero-Crop Invariant for Data Screens**:
+  - **Trigger**: Camera scaling and panning in `CameraRig.tsx` and scene templates.
+  - **Anti-Pattern**: Punching in beyond 1.05 (e.g. `scale: 1.14` with heavy panning), cropping out headers, cards, badges, and peripheral diagram data.
+  - **Strict Invariant**: Camera zoom on diagrammatic, blueprint, HUD, and data screens must be strictly constrained to `1.0` to `1.02` max (at most 2% subtle drift, zero data cutoff). All visual momentum must come from internal component animations without cropping the canvas.
+- **Clean Light Editorial Aesthetic (Minimalist White Background)**:
+  - **Trigger**: Global theme, visual templates, and canvas backgrounds.
+  - **Anti-Pattern**: Defaulting to harsh dark cyberpunk neon (`#080A0F` with `#00F5D4` glows and scanlines).
+  - **Strict Invariant**: Enforce a clean, elegant light editorial palette (white `#FFFFFF` / off-white `#F8FAFC` background, deep charcoal `#0F172A` typography, soft slate `#E2E8F0` borders, surgical cobalt `#2563EB`, and warm amber `#D97706` accents, inspired by Vox, Bloomberg, and Financial Times graphics).
+- **Auto-Wrapped Connector Badges (Zero Clipping Invariant)**:
+  - **Trigger**: Rendering dynamic badges and connector text between system blueprint blocks.
+  - **Anti-Pattern**: Clamping pill width to a narrow gap between cards (`Math.min(gap - 8, ...)`), forcing long labels into a single line that overflows the pill.
+  - **Strict Invariant**: Use auto-wrapped two-line SVG text or increase inter-block spacing so connector badges never clip or overflow borders.
+- **No Burned-In Subtitles for Long-Form 16:9 Broadcast**:
+  - **Trigger**: Rendering long-form broadcast video in `MainComposition.tsx`.
+  - **Anti-Pattern`: Burning hardcoded subtitle badges/captions onto the bottom of 16:9 video when native YouTube CC (`subtitles.srt`) is provided, cluttering the lower viewport and colliding with diagrams/HUDs.
+  - **Strict Invariant`: Long-form 16:9 video must remain completely clean of burned-in subtitles, letting YouTube handle native Closed Captions via `subtitles.srt`. (Burned captions remain strictly reserved for vertical 9:16 Shorts where native CC is absent).
+
+
 
