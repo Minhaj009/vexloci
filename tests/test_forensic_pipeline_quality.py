@@ -118,7 +118,7 @@ class TestForensicPipelineQuality(unittest.TestCase):
         )
         self.assertEqual(
             normalize_narration_for_tts("SWIFT"),
-            "SWIFT",
+            "Swift",
         )
         self.assertEqual(
             normalize_narration_for_tts("OFAC"),

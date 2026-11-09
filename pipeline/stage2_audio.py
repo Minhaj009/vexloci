@@ -116,14 +116,29 @@ def decimal_to_words(s: str) -> str:
 def normalize_narration_for_tts(text: str) -> str:
     normalized = text
 
+    # Tricky specific terms and human number patterns
     normalized = re.sub(
         r"\b0x0041A28F\b",
         "hex offset double-zero forty-one A-two eight-F",
         normalized,
         flags=re.IGNORECASE,
     )
-    normalized = re.sub(r"\b0x00\b", "double-zero", normalized, flags=re.IGNORECASE)
-    normalized = re.sub(r"\b0x40\b", "four-zero", normalized, flags=re.IGNORECASE)
+    normalized = re.sub(r"\b0x00\b", "hex double-zero", normalized, flags=re.IGNORECASE)
+    normalized = re.sub(r"\b0x40\b", "hex four-zero", normalized, flags=re.IGNORECASE)
+    normalized = re.sub(r"\b00\b", "double-zero", normalized)
+    normalized = re.sub(r"\b20:36\b", "twenty thirty-six", normalized)
+    normalized = re.sub(r"\b75 04\b", "seventy-five zero-four", normalized)
+    normalized = re.sub(r"\b90 90\b", "ninety ninety", normalized)
+    normalized = re.sub(r"\b0([1-9])\b", r"zero \1", normalized)
+
+    # SWIFT: prevent letter-by-letter spelling out in all-caps
+    normalized = re.sub(r"\bSWIFT's\b", "Swift's", normalized)
+    normalized = re.sub(r"\bSWIFT\b", "Swift", normalized)
+
+    # Natural documentary pronunciation for geographic locations
+    normalized = re.sub(r"\bBangladesh\b", "Bahngladesh", normalized)
+    normalized = re.sub(r"\bDhaka\b", "Dhahka", normalized)
+    normalized = re.sub(r"\bMotijheel\b", "Motee-jheel", normalized)
 
     def _hex_replacer(m: re.Match) -> str:
         val = m.group(1)
