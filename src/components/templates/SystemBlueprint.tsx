@@ -1,7 +1,11 @@
 import React, { useMemo } from 'react';
-import { spring, useCurrentFrame, useVideoConfig } from 'remotion';
+import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { AlertOctagon, CheckCircle2, Cpu, Workflow } from 'lucide-react';
 import { SceneData, SystemBlueprintPropsSchema } from '../../schemas/timeline.schema';
+import { Card, CardHeader, CardTitle } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Alert } from '../ui/alert';
+import { cn } from '../../lib/utils';
 
 interface SystemBlueprintProps {
   scene: SceneData;
@@ -25,7 +29,7 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
     [scene.microEvents]
   );
 
-  const isFault = faultEvent && frame >= Math.round(faultEvent.triggerOffsetSec * fps);
+  const isFault = Boolean(faultEvent && frame >= Math.round(faultEvent.triggerOffsetSec * fps));
 
   let faultProgress = 0;
   if (faultEvent && frame >= Math.round(faultEvent.triggerOffsetSec * fps)) {
@@ -37,20 +41,22 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
     });
   }
 
-  const width = 1380;
-  const height = 520;
+  const diagramWidth = 1440;
+  const diagramHeight = 440;
   const blocksCount = props.blocks.length;
+  const totalFrames = Math.max(1, Math.round(scene.durationSec * fps));
+
+  const gap = 115;
+  const blockWidth = 260;
+  const blockHeight = 150;
 
   const blockCoords = useMemo<Record<string, BlockCoord>>(() => {
     const map: Record<string, BlockCoord> = {};
     if (blocksCount === 0) return map;
 
-    const blockWidth = 220;
-    const blockHeight = 110;
-    const gap = 100; // Generous 100px gap preventing any flow text collision
     const totalW = blocksCount * blockWidth + (blocksCount - 1) * gap;
-    const startX = (width - totalW) / 2;
-    const y = height / 2 - blockHeight / 2;
+    const startX = (diagramWidth - totalW) / 2;
+    const y = diagramHeight / 2 - blockHeight / 2;
 
     props.blocks.forEach((b, idx) => {
       map[b.id] = {
@@ -62,54 +68,80 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
     });
 
     return map;
-  }, [props.blocks, blocksCount, width, height]);
+  }, [props.blocks, blocksCount, diagramWidth, diagramHeight, blockWidth, blockHeight, gap]);
 
   return (
     <div className="relative w-full h-full flex items-center justify-center p-6 select-none">
-      <div className="relative w-[1380px] bg-[#0A0D14] border border-[#1E2536] rounded-2xl shadow-[0_30px_70px_rgba(0,0,0,0.95)] p-8 overflow-hidden">
-        <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#1E2536]">
+      <Card className="relative w-[1540px] bg-[#0E1526]/95 border border-slate-700/80 rounded-2xl shadow-[0_25px_60px_rgba(0,0,0,0.85)] p-7 overflow-hidden mb-12">
+        <CardHeader className="flex flex-row items-center justify-between pb-4 mb-4 border-b border-slate-800 p-0 space-y-0">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-[#07090E] border border-[#1E2536] text-[#00F5D4] shadow-inner">
-              <Workflow className="w-6 h-6" />
+            <div className="p-2.5 rounded-xl bg-[#090E1A] border border-slate-800 text-sky-400">
+              <Workflow className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-mono tracking-widest text-[#94A3B8]">
+              <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase">
                 ARCHITECTURAL BLUEPRINT // PIPELINE DEPLOYMENT
               </span>
-              <h2 className="text-xl font-heading font-extrabold text-[#F1F5F9] tracking-tight">
+              <CardTitle className="text-xl font-heading font-extrabold text-slate-100 tracking-tight mt-0.5">
                 {props.systemTitle}
-              </h2>
+              </CardTitle>
             </div>
           </div>
 
           <div className="flex items-center gap-3 text-xs font-mono">
-            <span
-              className={`px-3 py-1 rounded-full border transition-colors duration-300 font-bold ${
+            <Badge
+              variant={isFault ? 'destructive' : 'secondary'}
+              className={cn(
+                'px-3 py-1 font-mono text-xs font-semibold tracking-wide border',
                 isFault
-                  ? 'bg-[#FF2A54]/20 border-[#FF2A54] text-[#FF2A54] shadow-[0_0_15px_rgba(255,42,84,0.4)]'
-                  : 'bg-[#00F5D4]/15 border-[#00F5D4]/40 text-[#00F5D4]'
-              }`}
+                  ? 'bg-rose-950/60 border-rose-500/80 text-rose-300 animate-pulse'
+                  : 'bg-slate-900 border-slate-700 text-slate-300'
+              )}
             >
-              {isFault ? 'FAULT TRIGGERED // RE-ENTRANT DEAD CODE' : 'SYSTEM STATUS: VERIFIED'}
-            </span>
+              {isFault ? 'FAULT TRIGGERED // RE-ENTRANT LOOP' : 'STATUS: OPERATIONAL'}
+            </Badge>
           </div>
-        </div>
+        </CardHeader>
 
-        <div className="relative w-full h-[430px] rounded-xl bg-[#06080D] border border-[#1E2536] overflow-hidden">
-          <svg className="w-full h-full" viewBox={`0 0 ${width} ${height}`}>
+        {faultProgress > 0 && (
+          <Alert
+            variant="destructive"
+            className="mb-4 bg-rose-950/40 border-rose-500/80 py-2.5 px-4 font-mono text-xs font-bold flex items-center gap-2.5"
+            style={{
+              opacity: faultProgress,
+              transform: `translateY(${(1 - faultProgress) * -10}px)`,
+            }}
+          >
+            <AlertOctagon className="w-4 h-4 animate-pulse text-rose-400" />
+            <span className="text-rose-200">
+              {faultEvent?.payloadText || 'CRITICAL FAULT: UNCONTROLLED HIGH-FREQUENCY LOOP DETECTED'}
+            </span>
+          </Alert>
+        )}
+
+        <div className="relative w-full h-[450px] rounded-xl bg-[#080D1A] border border-slate-800/90 overflow-hidden">
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox={`0 0 ${diagramWidth} ${diagramHeight}`}>
             <defs>
-              <pattern id="blueprintGrid" width="35" height="35" patternUnits="userSpaceOnUse">
-                <path d="M 35 0 L 0 0 0 35" fill="none" stroke="#121A2B" strokeWidth="0.8" />
+              <pattern id="blueprintGrid" width="36" height="36" patternUnits="userSpaceOnUse">
+                <path d="M 36 0 L 0 0 0 36" fill="none" stroke="#131F36" strokeWidth="0.8" />
               </pattern>
             </defs>
 
             <rect width="100%" height="100%" fill="url(#blueprintGrid)" />
 
-            {/* Flow Connecting Lines & Isolated Label Badges */}
             {props.flows.map((flow, idx) => {
               const src = blockCoords[flow.from];
               const dst = blockCoords[flow.to];
               if (!src || !dst) return null;
+
+              const flowDelay = Math.round(((idx + 0.5) / Math.max(1, blocksCount)) * (totalFrames * 0.4));
+              if (frame < flowDelay) return null;
+
+              const flowProgress = spring({
+                frame: frame - flowDelay,
+                fps,
+                config: { damping: 14, mass: 0.8, stiffness: 100 },
+              });
 
               const x1 = src.x + src.width;
               const y1 = src.y + src.height / 2;
@@ -117,184 +149,175 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
               const y2 = dst.y + dst.height / 2;
               const midFlowX = (x1 + x2) / 2;
 
-              const isFractured = isFault && (props.blocks.find(b => b.id === flow.from)?.isFaultPoint || idx >= 1);
-              const flowColor = isFractured ? '#FF2A54' : '#00F5D4';
-              const pulseOffset = (-frame * 2.5 + idx * 20) % 100;
+              const isFractured = Boolean(
+                isFault && (props.blocks.find((b) => b.id === flow.from)?.isFaultPoint || idx >= 1)
+              );
+              const flowColor = isFractured ? '#EF4444' : '#38BDF8';
+              const pulseOffset = (-frame * 2.2 + idx * 20) % 100;
+
+              const photonRatio = ((frame * 0.025 + idx * 0.3) % 1);
+              const dotX = x1 + (x2 - x1) * photonRatio;
+
+              const labelText = isFractured ? 'FRACTURED' : (flow.label || '');
+              const pillWidth = Math.max(90, Math.min(gap - 8, labelText.length * 7.2 + 24));
 
               return (
-                <g key={idx}>
-                  {/* Base Track */}
+                <g key={idx} opacity={flowProgress}>
                   <line
                     x1={x1}
                     y1={y1}
                     x2={x2}
                     y2={y2}
-                    stroke="#1E2536"
+                    stroke="#1E293B"
                     strokeWidth="3"
                   />
-                  {/* Glowing Animated Dash Track */}
                   <line
                     x1={x1}
                     y1={y1}
                     x2={x2}
                     y2={y2}
                     stroke={flowColor}
-                    strokeWidth="2.5"
-                    strokeDasharray={isFractured ? '4 4' : '8 14'}
+                    strokeWidth="2"
+                    strokeDasharray={isFractured ? '4 4' : '8 12'}
                     strokeDashoffset={pulseOffset}
-                    style={{
-                      filter: `drop-shadow(0 0 6px ${flowColor})`,
-                    }}
                   />
 
-                  {/* Flow Label Pill: Elevated cleanly ABOVE the line with solid background */}
-                  <g transform={`translate(${midFlowX}, ${y1 - 22})`}>
+                  <circle
+                    cx={dotX}
+                    cy={y1}
+                    r={3}
+                    fill={flowColor}
+                  />
+
+                  <g transform={`translate(${midFlowX}, ${y1 - 24})`}>
                     <rect
-                      x="-48"
-                      y="-11"
-                      width="96"
-                      height="22"
-                      rx="11"
-                      fill="#0A0E17"
+                      x={-pillWidth / 2}
+                      y="-12"
+                      width={pillWidth}
+                      height="24"
+                      rx="12"
+                      fill="#0B1322"
                       stroke={flowColor}
-                      strokeWidth="1.5"
-                      style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.8))' }}
+                      strokeWidth="1.2"
+                      style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.6))' }}
                     />
                     <text
                       y="4"
                       textAnchor="middle"
-                      fill={flowColor}
-                      fontSize="9"
+                      fill={isFractured ? '#FCA5A5' : '#E2E8F0'}
+                      fontSize="9.5"
                       fontFamily="JetBrains Mono"
-                      fontWeight="bold"
-                      letterSpacing="0.5"
+                      fontWeight="600"
+                      letterSpacing="0.3"
                     >
-                      {isFractured ? 'FRACTURED' : flow.label}
+                      {labelText}
                     </text>
                   </g>
                 </g>
               );
             })}
 
-            {/* Architecture Blocks */}
-            {props.blocks.map((block, idx) => {
+            {props.blocks.map((block) => {
               const pos = blockCoords[block.id];
-              if (!pos) return null;
-
-              const isFaultBlock = Boolean(block.isFaultPoint) && isFault;
-              const illuminationRatio = Math.min(1, Math.max(0, (frame - idx * 12) / 18));
+              if (!pos || !block.isFaultPoint || !isFault) return null;
 
               return (
-                <g
-                  key={block.id}
-                  transform={`translate(${pos.x}, ${pos.y})`}
-                  style={{
-                    filter: isFaultBlock
-                      ? 'drop-shadow(0 0 20px rgba(255,42,84,0.8))'
-                      : illuminationRatio > 0.5
-                      ? 'drop-shadow(0 0 12px rgba(0,245,212,0.3))'
-                      : undefined,
-                  }}
-                >
-                  <rect
-                    width={pos.width}
-                    height={pos.height}
-                    rx="12"
-                    fill={isFaultBlock ? '#170A0F' : '#0B0F17'}
-                    stroke={isFaultBlock ? '#FF2A54' : illuminationRatio > 0.5 ? '#00F5D4' : '#1E2536'}
-                    strokeWidth={isFaultBlock ? 2.5 : 1.5}
-                  />
-
-                  {/* Block Header */}
-                  <rect
-                    width={pos.width}
-                    height="32"
-                    rx="12"
-                    fill={isFaultBlock ? '#2A0D15' : '#0E1422'}
-                  />
-                  <line
-                    x1="0"
-                    y1="32"
-                    x2={pos.width}
-                    y2="32"
-                    stroke={isFaultBlock ? '#FF2A54' : '#1E2536'}
-                    strokeWidth="1"
-                  />
-
-                  <g transform="translate(12, 20)">
-                    <Cpu className={`w-4 h-4 ${isFaultBlock ? 'text-[#FF2A54]' : 'text-[#00F5D4]'}`} />
-                  </g>
-                  <text
-                    x="34"
-                    y="21"
-                    fill="#F1F5F9"
-                    fontSize="11"
-                    fontFamily="Space Grotesk"
-                    fontWeight="bold"
-                    letterSpacing="0.5"
-                  >
-                    {block.id.toUpperCase()}
-                  </text>
-
-                  {/* Status Indicator Icon */}
-                  <g transform={`translate(${pos.width - 24}, 12)`}>
-                    {isFaultBlock ? (
-                      <AlertOctagon className="w-4 h-4 text-[#FF2A54] animate-pulse" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4 text-[#00F5D4]" />
-                    )}
-                  </g>
-
-                  {/* Block Title & Subtitle */}
-                  <text
-                    x="16"
-                    y="60"
-                    fill={isFaultBlock ? '#FF2A54' : '#F1F5F9'}
-                    fontSize="13"
-                    fontFamily="Space Grotesk"
-                    fontWeight="bold"
-                  >
-                    {block.title}
-                  </text>
-                  <text
-                    x="16"
-                    y="84"
-                    fill="#94A3B8"
-                    fontSize="10"
-                    fontFamily="JetBrains Mono"
-                  >
-                    {block.subtitle}
-                  </text>
-
-                  {/* Red Alert Pill on Fault */}
-                  {isFaultBlock && (
-                    <g transform="translate(14, 88)">
-                      <rect
-                        width={pos.width - 28}
-                        height="16"
-                        rx="4"
-                        fill="#FF2A54"
-                        opacity="0.2"
+                <g key={`fault-rings-${block.id}`}>
+                  {[0, 1, 2].map((ringIdx) => {
+                    const ripplePhase = ((frame + ringIdx * 12) % 36) / 36;
+                    const rippleRadius = pos.width / 2 + ripplePhase * 50;
+                    const rippleOpacity = (1 - ripplePhase) * 0.55;
+                    return (
+                      <circle
+                        key={ringIdx}
+                        cx={pos.x + pos.width / 2}
+                        cy={pos.y + pos.height / 2}
+                        r={rippleRadius}
+                        fill="none"
+                        stroke="#EF4444"
+                        strokeWidth="1.8"
+                        opacity={rippleOpacity}
                       />
-                      <text
-                        x={(pos.width - 28) / 2}
-                        y="12"
-                        textAnchor="middle"
-                        fill="#FF2A54"
-                        fontSize="9"
-                        fontFamily="JetBrains Mono"
-                        fontWeight="bold"
-                      >
-                        [FLAG_POWER_PEG=1]
-                      </text>
-                    </g>
-                  )}
+                    );
+                  })}
                 </g>
               );
             })}
           </svg>
+
+          {props.blocks.map((block, idx) => {
+            const pos = blockCoords[block.id];
+            if (!pos) return null;
+
+            const blockDelay = Math.round((idx / Math.max(1, blocksCount)) * (totalFrames * 0.35));
+            const blockSpring = spring({
+              frame: frame - blockDelay,
+              fps,
+              config: { damping: 14, mass: 0.9, stiffness: 100 },
+            });
+            const blockOpacity = interpolate(blockSpring, [0, 1], [0, 1]);
+            const blockScale = interpolate(blockSpring, [0, 1], [0.92, 1.0]);
+
+            const isFaultBlock = Boolean(block.isFaultPoint) && isFault;
+
+            return (
+              <Card
+                key={block.id}
+                className={cn(
+                  'absolute rounded-xl border p-4 flex flex-col justify-between transition-all overflow-hidden',
+                  isFaultBlock
+                    ? 'bg-rose-950/70 border-rose-500/80 shadow-[0_10px_30px_rgba(239,68,68,0.25)]'
+                    : 'bg-[#0E1729]/95 border-slate-700/80 shadow-[0_10px_25px_rgba(0,0,0,0.5)]'
+                )}
+                style={{
+                  left: `${pos.x}px`,
+                  top: `${pos.y}px`,
+                  width: `${pos.width}px`,
+                  height: `${pos.height}px`,
+                  opacity: blockOpacity,
+                  transform: `scale(${blockScale})`,
+                }}
+              >
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                  <Badge variant="mono" className="text-[9px] px-2 py-0.5 bg-slate-800/80 text-slate-300 border-0">
+                    {block.id.toUpperCase()}
+                  </Badge>
+                  <Badge
+                    variant={isFaultBlock ? 'destructive' : 'secondary'}
+                    className={cn(
+                      'text-[9px] font-mono font-semibold px-2 py-0.5 border-0',
+                      isFaultBlock ? 'bg-rose-900/80 text-rose-200 animate-pulse' : 'bg-slate-800 text-sky-400'
+                    )}
+                  >
+                    {isFaultBlock ? 'FAULT POINT' : 'OPERATIONAL'}
+                  </Badge>
+                </div>
+
+                <div className="my-1.5">
+                  <h4 className="text-[13px] font-heading font-bold text-slate-100 truncate">
+                    {block.title}
+                  </h4>
+                  <p className="text-[10.5px] font-mono text-slate-400 truncate mt-0.5">
+                    {block.subtitle}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-[10px] font-mono">
+                  <div className="flex items-center gap-1.5 text-slate-400">
+                    <Cpu className={cn('w-3.5 h-3.5', isFaultBlock ? 'text-rose-400' : 'text-sky-400')} />
+                    <span>SYS_BUS</span>
+                  </div>
+                  {isFaultBlock ? (
+                    <AlertOctagon className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+                  ) : (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  )}
+                </div>
+              </Card>
+            );
+          })}
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

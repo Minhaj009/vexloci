@@ -11,6 +11,38 @@ export const CameraRig: React.FC<CameraRigProps> = ({ scene, children }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
+  const totalFrames = Math.max(1, Math.round(scene.durationSec * fps));
+  const t = Math.min(1, Math.max(0, frame / totalFrames));
+
+  const isLongScene = scene.durationSec > 8.0;
+
+  let baseScale = 1.0;
+  let basePanX = 0;
+  let basePanY = 0;
+
+  if (isLongScene) {
+    if (t < 0.30) {
+      const beat1Progress = t / 0.30;
+      baseScale = interpolate(beat1Progress, [0, 1], [1.0, 1.02]);
+      basePanX = interpolate(beat1Progress, [0, 1], [0, -4]);
+      basePanY = interpolate(beat1Progress, [0, 1], [0, -2]);
+    } else if (t < 0.75) {
+      const beat2Progress = (t - 0.30) / 0.45;
+      baseScale = interpolate(beat2Progress, [0, 0.25, 0.75, 1], [1.02, 1.11, 1.14, 1.11]);
+      basePanX = interpolate(beat2Progress, [0, 0.25, 1], [-4, -16, -20]);
+      basePanY = interpolate(beat2Progress, [0, 0.25, 1], [-2, -8, -10]);
+    } else {
+      const beat3Progress = (t - 0.75) / 0.25;
+      baseScale = interpolate(beat3Progress, [0, 0.4, 1], [1.11, 1.06, 1.05]);
+      basePanX = interpolate(beat3Progress, [0, 1], [-20, -8]);
+      basePanY = interpolate(beat3Progress, [0, 1], [-10, -4]);
+    }
+  } else {
+    baseScale = interpolate(t, [0, 1], [1.0, 1.05]);
+    basePanX = interpolate(t, [0, 1], [0, -12]);
+    basePanY = interpolate(t, [0, 1], [0, -6]);
+  }
+
   const zoomEvents = useMemo(
     () => scene.microEvents.filter((e) => e.action === 'ZOOM_IN'),
     [scene.microEvents]
@@ -25,13 +57,6 @@ export const CameraRig: React.FC<CameraRigProps> = ({ scene, children }) => {
     () => scene.microEvents.filter((e) => e.action === 'TRIGGER_CRASH_DROP'),
     [scene.microEvents]
   );
-
-  const openingProgress = interpolate(frame, [0, 30], [0, 1], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-
-  const introScale = interpolate(openingProgress, [0, 1], [1.04, 1.0]);
 
   let zoomMultiplier = 1.0;
   for (const zoomEvent of zoomEvents) {
@@ -77,15 +102,16 @@ export const CameraRig: React.FC<CameraRigProps> = ({ scene, children }) => {
     }
   }
 
-  const finalTransX = currentPanX + shakeX;
-  const finalTransY = currentPanY + shakeY;
+  const finalScale = baseScale * zoomMultiplier;
+  const finalTransX = basePanX + currentPanX + shakeX;
+  const finalTransY = basePanY + currentPanY + shakeY;
 
   return (
     <div className="relative w-full h-full overflow-hidden">
       <div
         className="w-full h-full will-change-transform flex items-center justify-center"
         style={{
-          transform: `scale(${introScale * zoomMultiplier}) translate(${finalTransX}px, ${finalTransY}px)`,
+          transform: `scale(${finalScale}) translate(${finalTransX}px, ${finalTransY}px)`,
           transformOrigin: '50% 50%',
         }}
       >

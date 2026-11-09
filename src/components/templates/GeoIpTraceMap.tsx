@@ -5,6 +5,8 @@ import countriesTopology from 'world-atlas/countries-110m.json';
 import * as topojson from 'topojson-client';
 import * as d3Geo from 'd3-geo';
 import { GeoIpTraceMapPropsSchema, SceneData } from '../../schemas/timeline.schema';
+import { BorderBeam } from '../ui/border-beam';
+import { RadarSweep } from '../ui/radar-sweep';
 
 interface GeoIpTraceMapProps {
   scene: SceneData;
@@ -19,13 +21,6 @@ interface HudSlot {
   connY: number;
   badge: string;
 }
-
-const HUD_SLOTS: HudSlot[] = [
-  { x: 80, y: 780, w: 320, h: 86, connX: 400, connY: 823, badge: 'HOP 01 // ORIGIN' },
-  { x: 80, y: 170, w: 320, h: 86, connX: 400, connY: 213, badge: 'HOP 02 // DETECTED' },
-  { x: 1520, y: 170, w: 320, h: 86, connX: 1520, connY: 213, badge: 'HOP 03 // TRANSATLANTIC' },
-  { x: 1520, y: 780, w: 320, h: 86, connX: 1520, connY: 823, badge: 'HOP 04 // CASCADE' },
-];
 
 export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
   const frame = useCurrentFrame();
@@ -76,13 +71,74 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
   }, [countriesGeo, waypoints]);
 
   const projectedWaypoints = useMemo(() => {
+    const cardWidth = 360;
+    const cardHeight = 104;
+    const quadCounts = { TL: 0, BL: 0, TR: 0, BR: 0 };
+    const badges = [
+      'HOP 01 // ORIGIN',
+      'HOP 02 // DETECTED',
+      'HOP 03 // ROUTED',
+      'HOP 04 // CASCADE',
+      'HOP 05 // SETTLED',
+      'HOP 06 // TERMINUS',
+    ];
+
     return waypoints.map((wp, idx) => {
       const pt = projection([wp.lon, wp.lat]) || [width / 2, height / 2];
+      const wx = pt[0];
+      const wy = pt[1];
+      const badge = badges[idx] || `HOP ${String(idx + 1).padStart(2, '0')} // NODE`;
+
+      let slotX: number;
+      let slotY: number;
+      let connX: number;
+      let connY: number;
+
+      if (wx < 960) {
+        if (wy < 540) {
+          const i = quadCounts.TL++;
+          slotX = 70;
+          slotY = 160 + i * 140;
+          connX = slotX + cardWidth;
+          connY = slotY + cardHeight / 2;
+        } else {
+          const i = quadCounts.BL++;
+          slotX = 70;
+          slotY = 680 + i * 140;
+          connX = slotX + cardWidth;
+          connY = slotY + cardHeight / 2;
+        }
+      } else {
+        if (wy < 540) {
+          const i = quadCounts.TR++;
+          slotX = 1480;
+          slotY = 160 + i * 140;
+          connX = slotX;
+          connY = slotY + cardHeight / 2;
+        } else {
+          const i = quadCounts.BR++;
+          slotX = 1480;
+          slotY = 680 + i * 140;
+          connX = slotX;
+          connY = slotY + cardHeight / 2;
+        }
+      }
+
+      const slot: HudSlot = {
+        x: slotX,
+        y: slotY,
+        w: cardWidth,
+        h: cardHeight,
+        connX,
+        connY,
+        badge,
+      };
+
       return {
         ...wp,
-        x: pt[0],
-        y: pt[1],
-        slot: HUD_SLOTS[idx % HUD_SLOTS.length],
+        x: wx,
+        y: wy,
+        slot,
       };
     });
   }, [waypoints, projection]);
@@ -92,18 +148,14 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
   });
   const activeHopIdx = Math.floor(activeHopFloat);
 
-  const radarPhase = (frame % 30) / 30;
-  const radarRadius = 6 + radarPhase * 36;
-  const radarOpacity = 1 - radarPhase;
-
   const lonMarkers = [-120, -60, 0, 60, 120];
   const latMarkers = [60, 30, 0, -30];
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-[#07090E] select-none">
-      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between backdrop-blur-md bg-[#080A0F]/85 border border-[#1E2536] rounded-xl px-6 py-3 mx-12 mt-6">
+    <div className="relative w-full h-full overflow-hidden bg-[#0B1220] select-none">
+      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between backdrop-blur-md bg-[#0B1220]/90 border border-[#1E293B] rounded-xl px-6 py-3 mx-12 mt-6">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-lg bg-[#07090E] border border-[#1E2536] text-[#00F5D4]">
+          <div className="p-2.5 rounded-lg bg-[#0E1726] border border-[#1E293B] text-[#38BDF8]">
             <Globe className="w-6 h-6" />
           </div>
           <div>
@@ -117,12 +169,12 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
         </div>
 
         <div className="flex items-center gap-4 text-xs font-mono">
-          <div className="flex items-center gap-2 text-[#00F5D4]">
+          <div className="flex items-center gap-2 text-[#38BDF8]">
             <Navigation className="w-4 h-4 animate-spin" style={{ animationDuration: '8s' }} />
             <span>ACTIVE HOP 0{activeHopIdx + 1} OF 0{waypoints.length}</span>
           </div>
-          <span className="px-2 py-0.5 rounded bg-[#00F5D4]/15 border border-[#00F5D4]/40 text-[#00F5D4]">
-            PACKET PROPAGATION: 4.2ms
+          <span className="px-2 py-0.5 rounded bg-[#38BDF8]/15 border border-[#38BDF8]/40 text-[#38BDF8]">
+            PROPAGATION: {(4.1 + Math.sin(frame * 0.2) * 0.2).toFixed(1)}ms
           </span>
         </div>
       </div>
@@ -130,16 +182,16 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
       <svg className="w-full h-full absolute inset-0" viewBox="0 0 1920 1080">
         <defs>
           <linearGradient id="traceArcGlow" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#00F5D4" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#FF2A54" stopOpacity="0.9" />
+            <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.95" />
           </linearGradient>
 
-          <pattern id="continent-dots" width="6" height="6" patternUnits="userSpaceOnUse">
-            <circle cx="3" cy="3" r="1.1" fill="#1E3A5F" />
+          <pattern id="continent-dots" width="8" height="8" patternUnits="userSpaceOnUse">
+            <circle cx="4" cy="4" r="1.3" fill="#38BDF8" fillOpacity="0.14" />
           </pattern>
         </defs>
 
-        <rect width="100%" height="100%" fill="#07090E" />
+        <rect width="100%" height="100%" fill="#0B1220]" />
 
         <path
           d={graticulePath}
@@ -147,7 +199,7 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
           stroke="#1E293B"
           strokeWidth="0.8"
           strokeDasharray="3 3"
-          opacity={0.6}
+          opacity={0.5}
         />
 
         {countriesGeo?.features?.map((feature: any, i: number) => {
@@ -159,15 +211,20 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
             <g key={`country-${feature.id || i}`}>
               <path
                 d={d}
-                fill={isActive ? 'rgba(0, 245, 212, 0.14)' : '#090E17'}
-                stroke="#00F5D4"
-                strokeWidth={isActive ? 1.2 : 0.75}
-                strokeOpacity={isActive ? 0.85 : 0.35}
+                fill={isActive ? 'rgba(56, 189, 248, 0.12)' : '#0E1726'}
+                stroke={isActive ? '#38BDF8' : '#1E293B'}
+                strokeWidth={isActive ? 1.5 : 0.75}
+                strokeOpacity={isActive ? 0.95 : 0.5}
+                style={
+                  isActive
+                    ? { filter: 'drop-shadow(0 0 6px rgba(56, 189, 248, 0.5))' }
+                    : undefined
+                }
               />
               <path
                 d={d}
                 fill="url(#continent-dots)"
-                opacity={isActive ? 0.9 : 0.55}
+                opacity={isActive ? 0.95 : 0.5}
                 pointerEvents="none"
               />
             </g>
@@ -186,7 +243,7 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
                 x={x}
                 y={95}
                 textAnchor="middle"
-                fill="#475569"
+                fill="#64748B"
                 fontFamily="JetBrains Mono"
                 fontSize="9"
               >
@@ -196,7 +253,7 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
                 x={x}
                 y={1060}
                 textAnchor="middle"
-                fill="#475569"
+                fill="#64748B"
                 fontFamily="JetBrains Mono"
                 fontSize="9"
               >
@@ -218,7 +275,7 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
                 x={24}
                 y={y}
                 textAnchor="start"
-                fill="#475569"
+                fill="#64748B"
                 fontFamily="JetBrains Mono"
                 fontSize="9"
               >
@@ -228,7 +285,7 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
                 x={1896}
                 y={y}
                 textAnchor="end"
-                fill="#475569"
+                fill="#64748B"
                 fontFamily="JetBrains Mono"
                 fontSize="9"
               >
@@ -237,6 +294,8 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
             </g>
           );
         })}
+
+        <RadarSweep cx={960} cy={460} size={520} color="#38BDF8" />
 
         {projectedWaypoints.map((p1, idx) => {
           if (idx === projectedWaypoints.length - 1) return null;
@@ -270,7 +329,7 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
               <path
                 d={d}
                 fill="none"
-                stroke="#1E2536"
+                stroke="#1E293B"
                 strokeWidth={1.5}
                 strokeDasharray="4 4"
               />
@@ -283,7 +342,7 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
                   strokeWidth={2.5}
                   strokeDasharray={`${arcLength} ${arcLength}`}
                   strokeDashoffset={(1 - arcProgress) * arcLength}
-                  style={{ filter: 'drop-shadow(0 0 8px rgba(0, 245, 212, 0.8))' }}
+                  style={{ filter: 'drop-shadow(0 0 10px rgba(56, 189, 248, 0.75))' }}
                 />
               )}
 
@@ -291,11 +350,11 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
                 <circle
                   cx={cx}
                   cy={cy}
-                  r={4}
-                  fill="#00F5D4"
-                  stroke="#0A0E17"
+                  r={4.5}
+                  fill="#38BDF8"
+                  stroke="#0B1220"
                   strokeWidth={1.5}
-                  style={{ filter: 'drop-shadow(0 0 8px #00F5D4)' }}
+                  style={{ filter: 'drop-shadow(0 0 10px #38BDF8)' }}
                 />
               )}
             </g>
@@ -305,61 +364,69 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
         {projectedWaypoints.map((wp, idx) => {
           const slot = wp.slot;
           const isPassed = frame >= idx * 45;
-          const isCurrent = activeHopIdx === idx;
 
-          let leaderPoints: string;
-          let dots: { x: number; y: number }[] = [];
-
-          if (idx === 0) {
-            const elbow1 = { x: wp.x - 45, y: wp.y + 45 };
-            const elbow2 = { x: elbow1.x, y: slot.connY };
-            leaderPoints = `${wp.x},${wp.y} ${elbow1.x},${elbow1.y} ${elbow2.x},${elbow2.y} ${slot.connX},${slot.connY}`;
-            dots = [elbow1, elbow2, { x: slot.connX, y: slot.connY }];
-          } else {
-            const dy = slot.connY - wp.y;
-            const isLeft = slot.connX < wp.x;
-            const dx = isLeft ? -Math.abs(dy) : Math.abs(dy);
-            const elbow = { x: wp.x + dx, y: slot.connY };
-            leaderPoints = `${wp.x},${wp.y} ${elbow.x},${elbow.y} ${slot.connX},${slot.connY}`;
-            dots = [elbow, { x: slot.connX, y: slot.connY }];
-          }
+          const isCardLeft = slot.connX < wp.x;
+          const midX = isCardLeft
+            ? Math.min(wp.x - 24, Math.max(slot.connX + 32, (slot.connX + wp.x) * 0.5))
+            : Math.max(wp.x + 24, Math.min(slot.connX - 32, (slot.connX + wp.x) * 0.5));
+          const leaderPoints = `${wp.x},${wp.y} ${midX},${wp.y} ${midX},${slot.connY} ${slot.connX},${slot.connY}`;
+          const dots = [
+            { x: midX, y: wp.y },
+            { x: midX, y: slot.connY },
+            { x: slot.connX, y: slot.connY },
+          ];
 
           return (
             <g key={`wp-leader-${idx}`}>
               <polyline
                 points={leaderPoints}
                 fill="none"
-                stroke="#00F5D4"
+                stroke="#38BDF8"
                 strokeWidth="1.2"
-                strokeOpacity={isPassed ? 0.9 : 0.35}
+                strokeOpacity={isPassed ? 0.85 : 0.25}
                 strokeDasharray={isPassed ? 'none' : '3 3'}
               />
 
               {dots.map((d, dIdx) => (
-                <circle key={`dot-${dIdx}`} cx={d.x} cy={d.y} r={2} fill="#00F5D4" opacity={isPassed ? 1 : 0.5} />
+                <circle
+                  key={`dot-${dIdx}`}
+                  cx={d.x}
+                  cy={d.y}
+                  r={2}
+                  fill="#38BDF8"
+                  opacity={isPassed ? 1 : 0.4}
+                />
               ))}
 
-              {isCurrent && (
-                <circle
-                  cx={wp.x}
-                  cy={wp.y}
-                  r={radarRadius}
-                  fill="none"
-                  stroke="#00F5D4"
-                  strokeWidth={1.5}
-                  opacity={radarOpacity}
-                />
-              )}
+              {isPassed &&
+                [0, 1, 2].map((ringIdx) => {
+                  const ringPhase = ((frame + ringIdx * 12) % 36) / 36;
+                  const ringR = 6 + ringPhase * 36;
+                  const ringOpacity = (1 - ringPhase) * 0.7;
+
+                  return (
+                    <circle
+                      key={`ripple-${idx}-${ringIdx}`}
+                      cx={wp.x}
+                      cy={wp.y}
+                      r={ringR}
+                      fill="none"
+                      stroke={idx === waypoints.length - 1 ? '#F59E0B' : '#38BDF8'}
+                      strokeWidth={1.2}
+                      opacity={ringOpacity}
+                    />
+                  );
+                })}
 
               <circle
                 cx={wp.x}
                 cy={wp.y}
                 r={5}
-                fill={isPassed ? '#00F5D4' : '#1E2536'}
-                stroke="#0A0E17"
+                fill={isPassed ? (idx === waypoints.length - 1 ? '#F59E0B' : '#38BDF8') : '#1E293B'}
+                stroke="#0B1220"
                 strokeWidth={2}
                 style={{
-                  filter: isPassed ? 'drop-shadow(0 0 8px #00F5D4)' : undefined,
+                  filter: isPassed ? 'drop-shadow(0 0 10px #38BDF8)' : undefined,
                 }}
               />
 
@@ -369,9 +436,22 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
                 width={slot.w}
                 height={slot.h}
               >
-                <div className="w-full h-full bg-[#0A0E17]/95 border border-[#1E2536] rounded-lg p-2.5 flex flex-col justify-between shadow-[0_8px_24px_rgba(0,0,0,0.85)] select-none">
+                <div className="relative w-full h-full bg-[#0B1220]/95 backdrop-blur-md border border-[#1E293B] rounded-xl p-3 flex flex-col justify-between shadow-[0_12px_32px_rgba(0,0,0,0.85)] overflow-hidden">
+                  {isPassed && (
+                    <BorderBeam
+                      size={180}
+                      duration={8}
+                      borderWidth={1.5}
+                      colorFrom="#38BDF8"
+                      colorTo="#F59E0B"
+                    />
+                  )}
                   <div className="flex items-center justify-between">
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider bg-[#00F5D4]/15 border border-[#00F5D4]/30 text-[#00F5D4]">
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold tracking-wider ${
+                      idx === waypoints.length - 1
+                        ? 'bg-[#F59E0B]/15 border border-[#F59E0B]/30 text-[#F59E0B]'
+                        : 'bg-[#38BDF8]/15 border border-[#38BDF8]/30 text-[#38BDF8]'
+                    }`}>
                       {slot.badge}
                     </span>
                     <span className="text-[9px] font-mono text-[#64748B]">
@@ -380,13 +460,17 @@ export const GeoIpTraceMap: React.FC<GeoIpTraceMapProps> = ({ scene }) => {
                   </div>
 
                   <div className="flex items-baseline justify-between">
-                    <span className="text-xs font-heading font-bold text-[#F1F5F9]">
+                    <span className="text-xs font-heading font-bold text-[#F1F5F9] truncate">
                       {wp.city}, {wp.country}
+                    </span>
+                    <span className="text-[9px] font-mono text-[#38BDF8]">
+                      {(3.8 + Math.sin(frame * 0.2 + idx) * 0.4).toFixed(1)}ms
                     </span>
                   </div>
 
-                  <div className="text-[9.5px] font-mono text-[#00F5D4]/90 truncate">
-                    {wp.detail}
+                  <div className="flex items-center justify-between text-[9px] font-mono text-[#94A3B8]">
+                    <span className="text-[#38BDF8]/90 truncate max-w-[200px]">{wp.detail}</span>
+                    <span className="text-slate-400/70">LOSS: 0.00%</span>
                   </div>
                 </div>
               </foreignObject>

@@ -7,16 +7,59 @@ Runs headless Playwright DOM bounding-box collision detection.
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 import subprocess
 
-from pipeline.config import CANVAS_FPS, CANVAS_HEIGHT, CANVAS_WIDTH
+from pipeline.config import CANVAS_FPS, CANVAS_HEIGHT, CANVAS_WIDTH, PUBLIC_DIR
+
+CHOREOGRAPHY_TEMPLATES = [
+    # Act 1: Incident Zero-Hour
+    "ForensicDocument", "SystemBlueprint", "TerminalReplay", "ArchivalFootage",
+    # Act 2: Architecture of Failure
+    "SystemBlueprint", "TerminalReplay", "NetworkTopology", "CommsIntercept",
+    # Act 3: The Strike & Detonation
+    "TerminalReplay", "MarketCrashChart", "ChronoTickingClock", "ArchivalFootage",
+    # Act 4: The Trace & Intercept
+    "GeoIpTraceMap", "CommsIntercept", "ChronoTickingClock", "ForensicDocument",
+    # Act 5: Contagion & Ruin
+    "NetworkTopology", "MarketCrashChart", "SplitAutopsy", "ArchivalFootage",
+    # Act 6: Forensic Autopsy
+    "SplitAutopsy", "ForensicDocument", "ParallaxCutout25D", "ArchivalFootage",
+]
+
+ACCENT_CYCLE = ["cyan", "amber", "crimson"]
+
+
+def verify_choreography_and_anti_repetition(scenes: List[Dict[str, Any]]) -> Tuple[bool, List[str]]:
+    errors: List[str] = []
+    if len(scenes) < 24:
+        return True, []
+
+    for i in range(1, len(scenes)):
+        if scenes[i].get("template") == "EndScreenOutro" or scenes[i - 1].get("template") == "EndScreenOutro":
+            continue
+        if scenes[i].get("template") == scenes[i - 1].get("template"):
+            errors.append(f"Scenes {i} and {i + 1} share identical consecutive template '{scenes[i].get('template')}'")
+
+    templates_present = {s.get("template") for s in scenes if s.get("template") != "EndScreenOutro"}
+    if len(templates_present) < 10:
+        errors.append(f"Choreography requires 10 master templates; found {len(templates_present)}: {templates_present}")
+
+    return len(errors) == 0, errors
+
 
 
 def _build_default_props_for_template(template: str, scene: Dict[str, Any], video_id: str = "") -> Dict[str, Any]:
     meta = scene.get("evidenceMetadata", {})
     words = scene.get("keyVisualKeywords", [])
     text = scene.get("narrationText", "")
+    s_idx = scene.get("sceneIndex", 0)
+
+    victim = meta.get("victim") or meta.get("target_victim") or "Target Enterprise"
+    damage = meta.get("financial_damage") or "$81 Million"
+    adversary = meta.get("perpetrator_adversary") or "Threat Actor Group"
+    tech_vector = meta.get("technical_vector") or "System Exploitation"
+    is_knight = "knight" in video_id.lower() or "kcg" in video_id.lower()
 
     if template == "ForensicDocument":
         chapter = scene.get("chapterTitle", "").lower()
@@ -27,26 +70,26 @@ def _build_default_props_for_template(template: str, scene: Dict[str, Any], vide
             or "reuters" in chapter
             or meta.get("articleImagePath") is not None
         )
-        article_path = meta.get("articleImagePath")
+        article_path = meta.get("articleImagePath") or (f"runs/{video_id}/assets/article_reuters.png" if is_article else None)
 
         return {
             "documentTitle": meta.get(
                 "documentTitle",
                 "REUTERS INVESTIGATIVE DESK // SPECIAL REPORT"
                 if is_article
-                else "SEC ENFORCEMENT ACTION NO. 3-15570",
+                else f"OFFICIAL FORENSIC DOSSIER // {victim.upper()}",
             ),
             "sourceAgency": meta.get(
                 "sourceAgency",
                 "REUTERS WIRE SERVICE"
                 if is_article
-                else "SECURITIES AND EXCHANGE COMMISSION",
+                else "FORENSIC INVESTIGATIVE PANEL",
             ),
             "dateStamp": meta.get(
                 "dateStamp",
                 "FEBRUARY 12, 2016 // 14:22 EST"
                 if is_article
-                else "AUGUST 01, 2012 // 09:30:14 EST",
+                else "EXHIBIT SEALED // CLASSIFIED",
             ),
             "stampText": meta.get(
                 "stampText", "VERIFIED REPORT" if is_article else "CRITICAL ANOMALY"
@@ -58,13 +101,13 @@ def _build_default_props_for_template(template: str, scene: Dict[str, Any], vide
                 "headline",
                 "How a spelling error halted a $1 billion cyber heist"
                 if is_article
-                else None,
+                else f"Forensic Investigation into {victim} Incident",
             ),
             "byline": meta.get(
                 "byline",
                 "By Jim Finkle and Nathan Layne // Cybersecurity Investigation"
                 if is_article
-                else None,
+                else "By Special Cyber Incident Response Unit",
             ),
             "articleImagePath": article_path,
             "highlightBox": meta.get("highlightBox"),
@@ -72,154 +115,211 @@ def _build_default_props_for_template(template: str, scene: Dict[str, Any], vide
                 "paragraphs",
                 [
                     "Hackers who breached Bangladesh Bank systems and attempted to steal nearly one billion dollars were halted by a mundane mistake: a simple spelling error.",
-                    "A routine transfer destined for a non-profit organization in Sri Lanka was halted when a routing clerk flagged instructions that misspelled foundation as 'F-A-N-D-A-T-I-O-N'.",
+                    "A routine transfer destined for a non-profit organization in Sri Lanka was halted when a routing clerk flagged instructions that misspelled foundation as 'fandation'.",
                     "The halted transfer alerted central bank officials in Dhaka, prompting an emergency freeze that prevented the withdrawal of an additional eight hundred fifty million dollars.",
                 ]
                 if is_article
                 else [
                     text[:130] if len(text) > 130 else text,
-                    "The automated routing engine generated recursive loop executions across four million shares, exhausting capital margins within minutes.",
+                    f"The investigation revealed an exploit chain targeting {victim}, resulting in unauthorized liquidation of reserves totaling {damage}.",
                 ],
             ),
             "highlightPhrases": [
-                "misspelled foundation as 'F-A-N-D-A-T-I-O-N'"
+                "misspelled foundation as 'fandation'"
                 if is_article
-                else (words[0] if words else "corrupted router"),
+                else (words[0] if words else "unauthorized liquidation"),
             ],
             "fontScale": 1.0,
         }
 
     elif template == "TerminalReplay":
+        if is_knight:
+            return {
+                "hostname": meta.get("hostname", "kcg-core-ord08.sec.chicago.internal"),
+                "filePath": meta.get("filePath", "/opt/kcg/smars/bin/route_exec.sh"),
+                "lines": [
+                    {"text": "./smars_deploy.sh --cluster=chicago-ny4 --activate-flags", "type": "cmd"},
+                    {"text": "[INFO] Connecting to cluster node 8/8 (kcg-core-ord08)...", "type": "output"},
+                    {"text": "[WARN] Flag 0x04 (POWER_PEG_TEST) still enabled on node 8", "type": "output"},
+                    {"text": "[FAIL] Deployment script omitted binary update on node 8", "type": "error"},
+                    {"text": "[CRIT] Execution loop initiated: Parent orders recirculating at 14,000 req/s", "type": "error"},
+                    {"text": "[ALERT] Capital controls exhausted on NYSE Gateway (ERR_MARGIN_BREACH)", "type": "error"},
+                ],
+                "fontScale": 1.0,
+            }
         return {
-            "hostname": meta.get("hostname", "kcg-core-ord08.sec.chicago.internal"),
-            "filePath": meta.get("filePath", "/opt/kcg/smars/bin/route_exec.sh"),
-            "lines": [
-                {"text": "./smars_deploy.sh --cluster=chicago-ny4 --activate-flags", "type": "cmd"},
-                {"text": "[INFO] Connecting to cluster node 8/8 (kcg-core-ord08)...", "type": "output"},
-                {"text": "[WARN] Flag 0x04 (POWER_PEG_TEST) still enabled on node 8", "type": "output"},
-                {"text": "[FAIL] Deployment script omitted binary update on node 8", "type": "error"},
-                {"text": "[CRIT] Execution loop initiated: Parent orders recirculating at 14,000 req/s", "type": "error"},
-                {"text": "[ALERT] Capital controls exhausted on NYSE Gateway (ERR_MARGIN_BREACH)", "type": "error"},
-            ],
+            "hostname": meta.get("hostname", f"{victim.lower().replace(' ', '-')}-gw01.net"),
+            "filePath": meta.get("filePath", "/var/log/audit/auth_events.log"),
+            "lines": meta.get("lines", [
+                {"text": "tail -f /var/log/audit/auth_events.log | grep -E 'ANOMALY|UNAUTHORIZED'", "type": "cmd"},
+                {"text": f"[ALERT] Inbound session initiated from unauthorized endpoint (SRC: 185.190.140.8)", "type": "error"},
+                {"text": f"[WARN] Core authentication bypassed via {tech_vector[:35]}", "type": "error"},
+                {"text": f"[CRIT] Transfer payload executed: {damage} routed out of settlement perimeter", "type": "error"},
+                {"text": "[INFO] Emergency quarantine protocol activated; socket connection severed", "type": "output"},
+            ]),
             "fontScale": 1.0,
         }
 
     elif template == "SystemBlueprint":
+        if is_knight:
+            return {
+                "systemTitle": meta.get("systemTitle", "SMARS ARCHITECTURE // ROUTING PIPELINE"),
+                "blocks": [
+                    {"id": "b1", "title": "Client Ingestion", "subtitle": "Parent Orders (820 req/s)", "isFaultPoint": False},
+                    {"id": "b2", "title": "SMARS Router (Node 8)", "subtitle": "Obsolete Power Peg Active", "isFaultPoint": True},
+                    {"id": "b3", "title": "Capital Gatekeeper", "subtitle": "Controls Bypassed", "isFaultPoint": True},
+                    {"id": "b4", "title": "NYSE Match Engine", "subtitle": "Order Flood Execution", "isFaultPoint": False},
+                ],
+                "flows": [
+                    {"from": "b1", "to": "b2", "label": "Direct Order Flow"},
+                    {"from": "b2", "to": "b3", "label": "Infinite Loop"},
+                    {"from": "b3", "to": "b4", "label": "Market Liquidity Drain"},
+                ],
+                "fontScale": 1.0,
+            }
         return {
-            "systemTitle": meta.get("systemTitle", "SMARS ARCHITECTURE // ROUTING PIPELINE"),
-            "blocks": [
-                {"id": "b1", "title": "Client Ingestion", "subtitle": "Parent Orders (820 req/s)", "isFaultPoint": False},
-                {"id": "b2", "title": "SMARS Router (Node 8)", "subtitle": "Obsolete Power Peg Active", "isFaultPoint": True},
-                {"id": "b3", "title": "Capital Gatekeeper", "subtitle": "Controls Bypassed", "isFaultPoint": True},
-                {"id": "b4", "title": "NYSE Match Engine", "subtitle": "Order Flood Execution", "isFaultPoint": False},
-            ],
-            "flows": [
-                {"from": "b1", "to": "b2", "label": "Direct Order Flow"},
-                {"from": "b2", "to": "b3", "label": "Infinite Loop"},
-                {"from": "b3", "to": "b4", "label": "Market Liquidity Drain"},
-            ],
+            "systemTitle": meta.get("systemTitle", f"{victim.upper()} // ARCHITECTURE PIPELINE"),
+            "blocks": meta.get("blocks", [
+                {"id": "b1", "title": "Perimeter Gateway", "subtitle": "Encrypted Ingress", "isFaultPoint": False},
+                {"id": "b2", "title": f"{victim[:18]} Core", "subtitle": f"Exploited via {tech_vector[:25]}", "isFaultPoint": True},
+                {"id": "b3", "title": "Clearing Controls", "subtitle": "Access Bypassed", "isFaultPoint": True},
+                {"id": "b4", "title": "External Corridor", "subtitle": f"{damage} Siphoned", "isFaultPoint": False},
+            ]),
+            "flows": meta.get("flows", [
+                {"from": "b1", "to": "b2", "label": "Initial Breach"},
+                {"from": "b2", "to": "b3", "label": "Privilege Escalation"},
+                {"from": "b3", "to": "b4", "label": "Capital Extraction"},
+            ]),
             "fontScale": 1.0,
         }
 
     elif template == "MarketCrashChart":
+        if is_knight:
+            return {
+                "tickerSymbol": meta.get("tickerSymbol", "KCG"),
+                "metricName": "SHARE PRICE & RESERVES",
+                "unit": "$",
+                "dataPoints": [
+                    {"label": "09:30", "value": 10.35},
+                    {"label": "09:40", "value": 10.28},
+                    {"label": "09:50", "value": 9.15},
+                    {"label": "10:00", "value": 6.40},
+                    {"label": "10:10", "value": 4.10},
+                    {"label": "10:15", "value": 2.45},
+                ],
+                "crashIndex": 3,
+                "fontScale": 1.0,
+            }
         return {
-            "tickerSymbol": meta.get("tickerSymbol", "KCG"),
-            "metricName": "SHARE PRICE & RESERVES",
-            "unit": "$",
-            "dataPoints": [
-                {"label": "09:30", "value": 10.35},
-                {"label": "09:40", "value": 10.28},
-                {"label": "09:50", "value": 9.15},
-                {"label": "10:00", "value": 6.40},
-                {"label": "10:10", "value": 4.10},
-                {"label": "10:15", "value": 2.45},
-            ],
-            "crashIndex": 3,
+            "tickerSymbol": meta.get("tickerSymbol", "RESERVES"),
+            "metricName": meta.get("metricName", "ACCOUNT RESERVES & SETTLEMENT VALUE"),
+            "unit": meta.get("unit", "$M"),
+            "dataPoints": meta.get("dataPoints", [
+                {"label": "00:00", "value": 100.0},
+                {"label": "02:00", "value": 98.5},
+                {"label": "04:00", "value": 81.2},
+                {"label": "06:00", "value": 19.4},
+                {"label": "08:00", "value": 0.0},
+            ]),
+            "crashIndex": meta.get("crashIndex", 2),
             "fontScale": 1.0,
         }
 
     elif template == "GeoIpTraceMap":
+        if is_knight:
+            return {
+                "waypoints": [
+                    {"city": "Chicago", "country": "USA", "lat": 41.8781, "lon": -87.6298, "detail": "CME Microwave Link // 4.2ms Ingestion"},
+                    {"city": "Jersey City", "country": "USA", "lat": 40.7178, "lon": -74.0431, "detail": "KCG Core Server Farm // Router Rogue"},
+                    {"city": "London", "country": "UK", "lat": 51.5145, "lon": -0.0982, "detail": "LSE Gateway // Transatlantic Spill"},
+                    {"city": "Frankfurt", "country": "Germany", "lat": 50.1109, "lon": 8.6821, "detail": "Eurex Exchange // European Arbitrage"},
+                ],
+                "fontScale": 1.0,
+            }
         return {
-            "waypoints": [
-                {"city": "Chicago", "country": "USA", "lat": 41.8781, "lon": -87.6298, "detail": "CME Microwave Link // 4.2ms Ingestion"},
-                {"city": "Jersey City", "country": "USA", "lat": 40.7178, "lon": -74.0431, "detail": "KCG Core Server Farm // Router Rogue"},
-                {"city": "London", "country": "UK", "lat": 51.5145, "lon": -0.0982, "detail": "LSE Gateway // Transatlantic Spill"},
-                {"city": "Frankfurt", "country": "Germany", "lat": 50.1109, "lon": 8.6821, "detail": "Eurex Exchange // European Arbitrage"},
-            ],
+            "waypoints": meta.get("waypoints", [
+                {"city": "Dhaka", "country": "Bangladesh", "lat": 23.8103, "lon": 90.4125, "detail": "Bangladesh Bank Core // Motijheel Origin"},
+                {"city": "New York", "country": "USA", "lat": 40.7128, "lon": -74.0060, "detail": "Federal Reserve // Account Custodian"},
+                {"city": "Colombo", "country": "Sri Lanka", "lat": 6.9271, "lon": 79.8612, "detail": "Pan Asia Bank // Shalika Typo Intercept"},
+                {"city": "Manila", "country": "Philippines", "lat": 14.5995, "lon": 120.9842, "detail": "RCBC Jupiter & Casino VIP Conduit"},
+            ]),
             "fontScale": 1.0,
         }
 
     elif template == "SplitAutopsy":
+        if is_knight:
+            return {
+                "leftTitle": "PRE-OPEN BALANCE SHEET",
+                "rightTitle": "POST-GLITCH AUDIT REPORT",
+                "leftMetrics": [
+                    "Total Firm Equity: $365M",
+                    "Daily Value-at-Risk: $12M",
+                    "Market Share: 17% NYSE Vol",
+                    "Regulatory Status: Fully Compliant",
+                ],
+                "rightMetrics": [
+                    "Net Trading Loss: -$440M",
+                    "Capital Depletion: 100%",
+                    "Overnight Exposure: $7.1B Long/Short",
+                    "Final Outcome: Forced Acquisition",
+                ],
+                "fontScale": 1.0,
+            }
         return {
-            "leftTitle": "PRE-OPEN BALANCE SHEET",
-            "rightTitle": "POST-GLITCH AUDIT REPORT",
-            "leftMetrics": [
-                "Total Firm Equity: $365M",
-                "Daily Value-at-Risk: $12M",
-                "Market Share: 17% NYSE Vol",
-                "Regulatory Status: Fully Compliant",
-            ],
-            "rightMetrics": [
-                "Net Trading Loss: -$440M",
-                "Capital Depletion: 100%",
-                "Overnight Exposure: $7.1B Long/Short",
-                "Final Outcome: Forced Acquisition",
-            ],
+            "leftTitle": meta.get("leftTitle", "PERIMETER SECURITY CONTROLS"),
+            "rightTitle": meta.get("rightTitle", "POST-EXPLOITATION DAMAGE"),
+            "leftMetrics": meta.get("leftMetrics", [
+                f"Target Victim: {victim}",
+                f"Attributed Adversary: {adversary}",
+                f"Attack Vector: {tech_vector[:30]}",
+                "Status: High-Security Clearing",
+            ]),
+            "rightMetrics": meta.get("rightMetrics", [
+                f"Confirmed Damage: {damage}",
+                "Regulatory Response: Emergency Global Alert",
+                "Forensic Finding: Administrative Credential Theft",
+                "Remediation: Compulsory Network Hardening",
+            ]),
             "fontScale": 1.0,
         }
 
     elif template == "ChronoTickingClock":
+        if is_knight:
+            return {
+                "startIsoTime": "2012-08-01T09:30:00Z",
+                "endIsoTime": "2012-08-01T10:15:00Z",
+                "milestones": [
+                    {"timeLabel": "09:30:00", "eventTitle": "Opening Bell", "detail": "Corrupted server 8 activates with live parent orders"},
+                    {"timeLabel": "09:34:12", "eventTitle": "First Warning", "detail": "Brokers flood phone lines reporting erratic execution"},
+                    {"timeLabel": "09:45:00", "eventTitle": "Capital Breach", "detail": "Net losses exceed total firm equity reserves"},
+                    {"timeLabel": "10:15:00", "eventTitle": "Server Shutdown", "detail": "Engineers pull power from server 8; $440M erased"},
+                ],
+                "fontScale": 1.0,
+            }
         return {
-            "startIsoTime": "2012-08-01T09:30:00Z",
-            "endIsoTime": "2012-08-01T10:15:00Z",
-            "milestones": [
-                {"timeLabel": "09:30:00", "eventTitle": "Opening Bell", "detail": "Corrupted server 8 activates with live parent orders"},
-                {"timeLabel": "09:34:12", "eventTitle": "First Warning", "detail": "Brokers flood phone lines reporting erratic execution"},
-                {"timeLabel": "09:45:00", "eventTitle": "Capital Breach", "detail": "Net losses exceed total firm equity reserves"},
-                {"timeLabel": "10:15:00", "eventTitle": "Server Shutdown", "detail": "Engineers pull power from server 8; $440M erased"},
-            ],
+            "startIsoTime": meta.get("startIsoTime", "2016-02-04T20:00:00Z"),
+            "endIsoTime": meta.get("endIsoTime", "2016-02-05T08:00:00Z"),
+            "milestones": meta.get("milestones", [
+                {"timeLabel": "20:00:00", "eventTitle": "Initial Access", "detail": "Adversary implants payload in core routing cluster"},
+                {"timeLabel": "23:45:00", "eventTitle": "Credential Theft", "detail": "Operator credentials forged for payment network"},
+                {"timeLabel": "04:12:00", "eventTitle": "Transfer Execution", "detail": "35 fraudulent wire orders dispatched to foreign custodians"},
+                {"timeLabel": "08:30:00", "eventTitle": "Discovery & Halt", "detail": "Printer malfunction triggers manual audit, halting remainder"},
+            ]),
             "fontScale": 1.0,
         }
 
     elif template == "ArchivalFootage":
         media_path = meta.get("mediaPath")
         if not media_path:
-            media_path = f"runs/{video_id}/assets/broll_archival_0.mp4"
+            media_path = f"runs/{video_id}/assets/broll_archival_{s_idx % 4}.mp4"
         return {
             "mediaType": meta.get("mediaType", "video"),
             "mediaPath": media_path,
-            "headline": meta.get("headline", "NEW YORK STOCK EXCHANGE // TRADING FLOOR"),
-            "caption": meta.get("caption", "Archival recording of the floor moments before the 09:30 AM liquidity drain."),
-            "provenanceSource": meta.get("provenanceSource", "EXHIBIT A // ARCHIVAL FOOTAGE [SOURCE: WIKIMEDIA COMMONS]"),
+            "headline": meta.get("headline", scene.get("chapterTitle", "PRIMARY FORENSIC ARCHIVE")),
+            "caption": meta.get("caption", text[:120] if text else "Verified archival footage documented in the official investigative dossier."),
+            "provenanceSource": meta.get("provenanceSource", "EXHIBIT ARCHIVE // VERIFIED SOURCE RECORD [WIKIMEDIA COMMONS]"),
             "fontScale": meta.get("fontScale", 1.0),
         }
-
-    elif template == "NetworkTopology":
-        nodes = meta.get("nodes")
-        edges = meta.get("edges")
-        if not nodes:
-            nodes = [
-                {"id": "bangladesh_bank", "label": "Bangladesh Bank", "type": "bank", "status": "compromised"},
-                {"id": "rcbc_jupiter", "label": "RCBC Jupiter", "type": "bank", "status": "compromised"},
-                {"id": "centurytex", "label": "Centurytex Trading", "type": "shell", "status": "compromised"},
-                {"id": "philrem", "label": "Philrem Service Corp", "type": "shell", "status": "compromised"},
-                {"id": "solaire_vip", "label": "Solaire VIP Junkets", "type": "shell", "status": "normal"},
-                {"id": "midas_hotel", "label": "Midas Hotel & Casino", "type": "shell", "status": "normal"},
-            ]
-        if not edges:
-            edges = [
-                {"from": "bangladesh_bank", "to": "rcbc_jupiter", "label": "MT103 SWIFT $81M"},
-                {"from": "rcbc_jupiter", "to": "centurytex", "label": "Fictitious Accounts"},
-                {"from": "centurytex", "to": "philrem", "label": "FX Conversion"},
-                {"from": "philrem", "to": "solaire_vip", "label": "$29M Chips"},
-                {"from": "philrem", "to": "midas_hotel", "label": "$21.2M Cash"},
-            ]
-        return {
-            "nodes": nodes,
-            "edges": edges,
-            "fontScale": 1.0,
-        }
-
     elif template == "EndScreenOutro":
         return {
             "title": meta.get("title", "CASE DOSSIER CLOSED"),
@@ -270,7 +370,10 @@ def compile_timeline(
         scene_words = []
         narration_text = scene.get("narrationText", "")
         scene_id = scene.get("sceneId", f"scene_{s_idx + 1:02d}")
-        template = scene["template"]
+        chosen_template = scene.get("template")
+        if chosen_template != "EndScreenOutro" and len(scenes) == 24 and s_idx < len(CHOREOGRAPHY_TEMPLATES):
+            chosen_template = CHOREOGRAPHY_TEMPLATES[s_idx]
+        template = chosen_template
 
         timing = scene_timings_map.get(scene_id) or (
             scene_timings_list[s_idx] if s_idx < len(scene_timings_list) else None
@@ -318,6 +421,9 @@ def compile_timeline(
 
         # Micro-Events and SFX Triggers
         micro_events = scene.get("microEvents", [])
+        assigned_accent = ACCENT_CYCLE[s_idx % len(ACCENT_CYCLE)]
+        for me in micro_events:
+            me["accentColor"] = assigned_accent
         sfx_triggers = scene.get("sfxTriggers", [])
 
         if not sfx_triggers:

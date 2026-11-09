@@ -21,10 +21,24 @@ export const ArchivalFootage: React.FC<ArchivalFootageProps> = ({ scene }) => {
     ? props.mediaPath
     : staticFile(props.mediaPath.replace(/^\/?public\//, ''));
 
+  // Derive static image fallback if available
+  const imageFallbackSrc = props.mediaPath.includes('broll_archival_')
+    ? staticFile(props.mediaPath.replace('broll_archival_', 'archival_img_').replace('.mp4', '.png').replace(/^\/?public\//, ''))
+    : null;
+
   return (
-    <div className="relative w-full h-full overflow-hidden bg-[#080A0F]">
+    <div className="relative w-full h-full overflow-hidden bg-gradient-to-b from-[#111827] to-[#0B0F19]">
+      {imageFallbackSrc && (
+        <div className="absolute inset-0 w-full h-full">
+          <Img
+            src={imageFallbackSrc}
+            className="w-full h-full object-cover opacity-80"
+          />
+        </div>
+      )}
+
       <div
-        className="absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden will-change-transform"
+        className="absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden will-change-transform z-10"
         style={{ transform: `scale(${scale})` }}
       >
         {props.mediaType === 'video' ? (

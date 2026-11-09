@@ -181,7 +181,7 @@ def generate_shorts_for_run(
             silent_short_mp4 = short_dir / "silent_short.mp4"
             cmd_render = (
                 f'npx remotion render ShortForensicComposition "{silent_short_mp4.as_posix()}" '
-                f'--props="{short_props_path.as_posix()}" --muted --gl=angle --concurrency=4'
+                f'--props="{short_props_path.as_posix()}" --muted --gl=angle --concurrency=4 --port=3100'
             )
             t0 = time.time()
             res_render = subprocess.run(cmd_render, shell=True, capture_output=True, text=True, cwd=str(config.PROJECT_ROOT))

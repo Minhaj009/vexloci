@@ -42,22 +42,31 @@ export const ParallaxCutout25D: React.FC<ParallaxCutout25DProps> = ({ scene }) =
     : null;
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-[#07090E] select-none">
+    <div className="relative w-full h-full overflow-hidden bg-gradient-to-b from-[#111827] to-[#0A0F1A] select-none">
       <div
-        className="absolute inset-0 bg-cover bg-center will-change-transform"
+        className="absolute inset-0 will-change-transform overflow-hidden"
         style={{
           transform: `scale(${bgScale})`,
-          filter: 'brightness(0.35)',
-          backgroundImage: resolvedBgSrc
-            ? `url(${resolvedBgSrc})`
-            : `radial-gradient(circle at 70% 50%, rgba(0,245,212,0.15) 0%, transparent 60%),
-               linear-gradient(to right, rgba(14,19,30,0.95), rgba(8,10,15,0.95))`,
         }}
       >
+        {resolvedBgSrc ? (
+          <Img
+            src={resolvedBgSrc}
+            className="w-full h-full object-cover filter brightness-90"
+          />
+        ) : (
+          <div
+            className="w-full h-full"
+            style={{
+              background: `radial-gradient(circle at 70% 50%, rgba(0,245,212,0.25) 0%, transparent 65%),
+                           linear-gradient(to right, #1A2338, #0E1524)`,
+            }}
+          />
+        )}
         <div
-          className="w-full h-full opacity-25"
+          className="absolute inset-0 opacity-35"
           style={{
-            backgroundImage: `linear-gradient(#1E2536 1px, transparent 1px), linear-gradient(90deg, #1E2536 1px, transparent 1px)`,
+            backgroundImage: `linear-gradient(rgba(50, 75, 120, 0.45) 1px, transparent 1px), linear-gradient(90deg, rgba(50, 75, 120, 0.45) 1px, transparent 1px)`,
             backgroundSize: '40px 40px',
           }}
         />

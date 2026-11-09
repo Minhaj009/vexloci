@@ -15,7 +15,7 @@ import subprocess
 from typing import Any, Dict, List, Optional
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 import requests
 import yfinance as yf
 
@@ -400,18 +400,42 @@ def apply_dark_forensic_lut(image_path: Path, output_path: Path) -> Path:
     if img is None:
         return image_path
 
-    img = cv2.convertScaleAbs(img, alpha=1.12, beta=-4)
+    mean_val = float(np.mean(img))
+    beta_boost = 0
+    if mean_val < 38.0:
+        beta_boost = int((38.0 - mean_val) * 1.2) + 6
+
+    img = cv2.convertScaleAbs(img, alpha=1.08, beta=beta_boost - 2)
 
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV).astype(np.float32)
-    hsv[:, :, 1] *= 0.65
+    hsv[:, :, 1] *= 0.72
     img_desat = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
 
     tint = np.zeros_like(img_desat)
-    tint[:, :] = [18, 12, 8]
-    blended = cv2.addWeighted(img_desat, 0.85, tint, 0.15, 0)
+    tint[:, :] = [24, 18, 12]
+    blended = cv2.addWeighted(img_desat, 0.88, tint, 0.12, 0)
+
+    final_mean = float(np.mean(blended))
+    if final_mean < 35.0:
+        blended = cv2.convertScaleAbs(blended, alpha=1.0, beta=int(35.0 - final_mean) + 3)
 
     cv2.imwrite(str(output_path), blended)
     return output_path
+
+
+def _load_editorial_font(font_paths: List[str], size: int) -> ImageFont.ImageFont:
+    for path_str in font_paths:
+        p = Path(path_str)
+        if p.exists():
+            try:
+                return ImageFont.truetype(str(p), size)
+            except Exception:
+                pass
+    try:
+        return ImageFont.truetype("arial.ttf", size)
+    except Exception:
+        pass
+    return ImageFont.load_default()
 
 
 def generate_sample_article_screenshot(
@@ -419,38 +443,50 @@ def generate_sample_article_screenshot(
     publication: str = "REUTERS",
     headline: str = "Spelling error halts $1 billion cyber heist from Bangladesh Bank",
     byline: str = "By Jim Finkle and Nathan Layne // CYBERSECURITY INVESTIGATION",
-    highlight_text: str = "A spelling error in an online transfer instruction helped prevent a nearly $1 billion cyber heist.",
+    highlight_text: str = "A routine transfer instruction addressed to Shalika Foundation misspelled foundation as 'fandation'.",
     date_str: str = "FEBRUARY 12, 2016",
     width: int = 1400,
     height: int = 800,
 ) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    img = Image.new("RGB", (width, height), color=(14, 18, 28))
+    img = Image.new("RGB", (width, height), color=(15, 20, 32))
     draw = ImageDraw.Draw(img)
 
-    draw.rectangle([(0, 0), (width, 80)], fill=(10, 13, 20))
-    draw.text((40, 26), f"{publication} // INVESTIGATIVE REPOSITORY", fill=(0, 245, 212))
-    draw.text((width - 320, 26), f"DATELINE: {date_str}", fill=(148, 163, 184))
+    headline_font = _load_editorial_font(["C:/Windows/Fonts/georgia.ttf", "C:/Windows/Fonts/georgiab.ttf", "georgia.ttf"], 30)
+    byline_font = _load_editorial_font(["C:/Windows/Fonts/arial.ttf", "C:/Windows/Fonts/segoeui.ttf", "arial.ttf"], 15)
+    masthead_font = _load_editorial_font(["C:/Windows/Fonts/arialbd.ttf", "C:/Windows/Fonts/arial.ttf"], 22)
+    meta_font = _load_editorial_font(["C:/Windows/Fonts/consola.ttf", "C:/Windows/Fonts/cour.ttf", "consola.ttf"], 13)
+    quote_header_font = _load_editorial_font(["C:/Windows/Fonts/arialbd.ttf", "C:/Windows/Fonts/arial.ttf"], 13)
+    quote_body_font = _load_editorial_font(["C:/Windows/Fonts/georgiai.ttf", "C:/Windows/Fonts/georgia.ttf"], 18)
+    body_font = _load_editorial_font(["C:/Windows/Fonts/georgia.ttf", "georgia.ttf"], 16)
 
-    draw.line([(0, 80), (width, 80)], fill=(30, 37, 54), width=2)
-    draw.text((40, 110), headline[:85], fill=(241, 245, 249))
-    draw.text((40, 150), byline, fill=(100, 116, 139))
-    draw.line([(40, 180), (width - 40, 180)], fill=(30, 37, 54), width=1)
+    draw.rectangle([(0, 0), (width, 80)], fill=(11, 16, 26))
+    draw.text((45, 26), f"{publication} // INVESTIGATIVE REPOSITORY", font=masthead_font, fill=(56, 189, 248))
+    draw.text((width - 360, 30), f"DATELINE: {date_str}", font=meta_font, fill=(148, 163, 184))
 
-    draw.rectangle([(40, 200), (width - 40, 300)], fill=(245, 158, 11), outline=(245, 158, 11), width=2)
-    draw.text((55, 220), "CRITICAL REVEAL // SMOKING GUN PARAGRAPH:", fill=(245, 158, 11))
-    draw.text((55, 250), f'"{highlight_text}"', fill=(241, 245, 249))
+    draw.line([(0, 80), (width, 80)], fill=(30, 41, 59), width=2)
+    draw.text((45, 105), headline[:85], font=headline_font, fill=(248, 250, 252))
+    draw.text((45, 155), byline, font=byline_font, fill=(148, 163, 184))
+    draw.line([(45, 188), (width - 45, 188)], fill=(30, 41, 59), width=1)
+
+    draw.rectangle([(45, 208), (width - 45, 328)], fill=(28, 24, 16), outline=(245, 158, 11), width=2)
+    draw.text((65, 222), "CRITICAL REVEAL // SMOKING GUN PARAGRAPH:", font=quote_header_font, fill=(245, 158, 11))
+    draw.text((65, 258), f'"{highlight_text}"', font=quote_body_font, fill=(255, 255, 255))
 
     body_lines = [
-        "Hackers broke into Bangladesh Bank systems and stole credentials used to initiate payment transfers.",
-        "The requests sent to the Federal Reserve Bank of New York appeared authentic, directing funds to accounts in the Philippines.",
-        "A routine transfer addressed to the Shalika Foundation was halted when a routing clerk noticed 'fandation' misspelled.",
-        "The subsequent audit led to the emergency freezing of hundreds of millions of dollars in pending wire instructions.",
+        "Hackers breached Bangladesh Bank credentials to initiate fraudulent SWIFT transfers to the New York Fed.",
+        "A routine $20 million transfer instruction addressed to the Shalika Foundation triggered suspicion.",
+        "Intermediary routing clerks halted the transaction after noticing hackers misspelled foundation as 'fandation'.",
+        "The emergency audit prevented an additional $850 million from clearing, confining the theft to $81 million.",
     ]
-    y_offset = 330
+    y_offset = 355
     for line in body_lines:
-        draw.text((40, y_offset), line, fill=(148, 163, 184))
-        y_offset += 40
+        draw.text((45, y_offset), line, font=body_font, fill=(203, 213, 225))
+        y_offset += 38
+
+    draw.line([(45, 720), (width - 45, 720)], fill=(30, 41, 59), width=1)
+    draw.text((45, 742), "EVIDENCE REPOSITORY // EXHIBIT DOC-2016-BB", font=meta_font, fill=(100, 116, 139))
+    draw.text((width - 450, 742), "OFFICIAL VERIFIED RECORD // DOCKET ARCHIVE", font=meta_font, fill=(100, 116, 139))
 
     img.save(output_path)
     apply_dark_forensic_lut(output_path, output_path)

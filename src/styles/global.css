@@ -3,6 +3,31 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --background: 222 47% 4%;
+    --foreground: 210 40% 96%;
+    --card: 220 33% 7%;
+    --card-foreground: 210 40% 96%;
+    --popover: 220 33% 7%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 172 100% 48%;
+    --primary-foreground: 222 47% 4%;
+    --secondary: 217 33% 15%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 11%;
+    --muted-foreground: 215 16% 65%;
+    --accent: 172 100% 48%;
+    --accent-foreground: 222 47% 4%;
+    --destructive: 348 100% 58%;
+    --destructive-foreground: 210 40% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 4%;
+    --border: 220 28% 16%;
+    --input: 220 28% 16%;
+    --ring: 172 100% 48%;
+    --radius: 0.75rem;
+  }
+
   body {
     background-color: #080a0f;
     color: #f1f5f9;
@@ -13,7 +38,6 @@
   }
 }
 
-/* Custom forensic scrollbars and subtle HUD grid lines */
 .hud-grid {
   background-size: 40px 40px;
   background-image: 

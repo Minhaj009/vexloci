@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 import subprocess
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 import numpy as np
 from scipy.io import wavfile
 
@@ -96,7 +96,7 @@ def render_silent_video(timeline_path: Path, output_mp4: Path) -> Path:
 
     cmd = (
         f'npx remotion render MainForensicComposition "{output_mp4.as_posix()}" '
-        f'--props="{timeline_path.as_posix()}" --muted --gl=angle --concurrency=4'
+        f'--props="{timeline_path.as_posix()}" --muted --gl=angle --concurrency=4 --port=3100'
     )
 
     t0 = time.time()
@@ -218,6 +218,77 @@ def verify_final_video_ffprobe(video_path: Path) -> Dict[str, Any]:
     return receipt
 
 
+def audit_final_audio(audio_path: Path, video_path: Optional[Path] = None) -> Dict[str, Any]:
+    """
+    Automated Headless Audio QA Scanner.
+    Audits audio for true peak, DC offset, digital clipping, and ultrasonic spikes.
+    """
+    if not audio_path.exists():
+        raise FileNotFoundError(f"Audio file not found: {audio_path}")
+
+    sr, raw_data = wavfile.read(str(audio_path))
+    if raw_data.dtype == np.int16:
+        audio = raw_data.astype(np.float32) / 32768.0
+    elif raw_data.dtype == np.int32:
+        audio = raw_data.astype(np.float32) / 2147483648.0
+    else:
+        audio = raw_data.astype(np.float32)
+
+    errors = []
+
+    # 1. True peak check (<= -1.5 dBFS)
+    peak_linear = float(np.max(np.abs(audio)))
+    peak_db = 20.0 * np.log10(peak_linear + 1e-9)
+    if peak_db > -1.4:
+        errors.append(f"True peak exceeds -1.5 dBFS limit: {peak_db:.2f} dBFS")
+
+    # 2. DC offset check (< 0.001)
+    dc_offset = float(np.abs(np.mean(audio)))
+    if dc_offset >= 0.001:
+        errors.append(f"DC offset exceeds tolerance (< 0.001): {dc_offset:.6f}")
+
+    # 3. Clipping check (samples >= 0.999)
+    clipping_samples = int(np.sum(np.abs(audio) >= 0.999))
+    if clipping_samples > 0:
+        errors.append(f"Digital clipping detected: {clipping_samples} samples hit >= 0.999")
+
+    # 4. High frequency / ultrasonic spike check (> 18 kHz)
+    ultrasonic_spike = False
+    if sr >= 44100 and audio.shape[0] > sr:
+        mono = audio if audio.ndim == 1 else np.mean(audio, axis=1)
+        chunk_len = min(sr * 10, mono.shape[0])
+        fft_vals = np.abs(np.fft.rfft(mono[:chunk_len]))
+        freqs = np.fft.rfftfreq(chunk_len, d=1.0 / sr)
+        high_mask = freqs >= 18000
+        mid_mask = (freqs >= 1000) & (freqs < 10000)
+        high_energy = float(np.mean(fft_vals[high_mask])) if np.any(high_mask) else 0.0
+        mid_energy = float(np.mean(fft_vals[mid_mask])) if np.any(mid_mask) else 1.0
+        if mid_energy > 0 and (high_energy / mid_energy) > 5.0:
+            ultrasonic_spike = True
+            errors.append("Ultrasonic high-frequency spike detected above 18 kHz")
+
+    # 5. Duration comparison with video if video_path exists
+    duration_diff = 0.0
+    if video_path and video_path.exists():
+        v_receipt = verify_final_video_ffprobe(video_path)
+        v_dur = v_receipt.get("durationSec", 0.0)
+        a_dur = audio.shape[0] / float(sr)
+        duration_diff = abs(v_dur - a_dur)
+        if duration_diff > 0.15:
+            errors.append(f"Audio/video duration mismatch exceeds 0.15s: {duration_diff:.3f}s")
+
+    passed = len(errors) == 0
+    return {
+        "passed": passed,
+        "true_peak_db": round(peak_db, 2),
+        "dc_offset": round(dc_offset, 6),
+        "clipping_samples": clipping_samples,
+        "ultrasonic_spike_detected": ultrasonic_spike,
+        "duration_diff_sec": round(duration_diff, 3),
+        "errors": errors,
+    }
+
+
 def execute_stage6_render(run_dir: Path) -> Dict[str, Any]:
     """Stage 6 Master Entry Point."""
     timeline_path = run_dir / "05_timeline.json"
@@ -243,6 +314,7 @@ def execute_stage6_render(run_dir: Path) -> Dict[str, Any]:
 
     # Step 4: Verification via ffprobe
     receipt = verify_final_video_ffprobe(final_video)
+    receipt["audio_qa"] = audit_final_audio(voice_path, video_path=final_video)
     flush_cuda_memory()
     return receipt
 

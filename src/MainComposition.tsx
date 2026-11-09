@@ -5,6 +5,7 @@ import { AtmosphericStage } from './components/shared/AtmosphericStage';
 import { ForensicHUD } from './components/shared/ForensicHUD';
 import { KineticCaption } from './components/shared/KineticCaption';
 import { CameraRig } from './components/shared/CameraRig';
+import { FilmGrainOverlay } from './components/shared/FilmGrainOverlay';
 import { ForensicDocument } from './components/templates/ForensicDocument';
 import { TerminalReplay } from './components/templates/TerminalReplay';
 import { MarketCrashChart } from './components/templates/MarketCrashChart';
@@ -91,6 +92,7 @@ export const MainForensicComposition: React.FC<MainCompositionProps> = (props) =
                 </CameraRig>
                 <ForensicHUD scene={scene} timeline={timeline} />
                 <KineticCaption scene={scene} />
+                <FilmGrainOverlay opacity={0.08} />
               </div>
             </Series.Sequence>
           );

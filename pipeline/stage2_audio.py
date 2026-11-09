@@ -16,6 +16,102 @@ from pipeline.utils_vram import flush_cuda_memory
 KOKORO_MODEL_PATH = ASSETS_DIR / "models" / "kokoro" / "kokoro-v0_19.onnx"
 KOKORO_VOICES_PATH = ASSETS_DIR / "models" / "kokoro" / "voices.bin"
 
+_ONES = [
+    "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+    "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+    "seventeen", "eighteen", "nineteen",
+]
+_TENS = [
+    "", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety",
+]
+_ORDINALS_SPECIAL = {
+    1: "first", 2: "second", 3: "third", 4: "fourth", 5: "fifth",
+    6: "sixth", 7: "seventh", 8: "eighth", 9: "ninth", 10: "tenth",
+    11: "eleventh", 12: "twelfth", 13: "thirteenth", 14: "fourteenth",
+    15: "fifteenth", 16: "sixteenth", 17: "seventeenth", 18: "eighteenth",
+    19: "nineteenth", 20: "twentieth", 30: "thirtieth", 40: "fortieth",
+    50: "fiftieth", 60: "sixtieth", 70: "seventieth", 80: "eightieth",
+    90: "ninetieth", 100: "one hundredth", 1000: "one thousandth",
+}
+
+
+def cardinal_to_words(n: int) -> str:
+    if n < 0:
+        return f"minus {cardinal_to_words(-n)}"
+    if n < 20:
+        return _ONES[n]
+    if n < 100:
+        tens_part = _TENS[n // 10]
+        rem = n % 10
+        return f"{tens_part}-{_ONES[rem]}" if rem else tens_part
+    if n < 1000:
+        hundreds = n // 100
+        rem = n % 100
+        if rem == 0:
+            return f"{_ONES[hundreds]} hundred"
+        if rem < 10:
+            return f"{_ONES[hundreds]} hundred and {_ONES[rem]}"
+        rem_str = cardinal_to_words(rem)
+        return f"{_ONES[hundreds]}-hundred {rem_str}"
+    if n < 1_000_000:
+        thousands = n // 1000
+        rem = n % 1000
+        prefix = f"{cardinal_to_words(thousands)} thousand"
+        if not rem:
+            return prefix
+        if rem < 100:
+            return f"{prefix} and {cardinal_to_words(rem)}"
+        return f"{prefix} {cardinal_to_words(rem)}"
+    if n < 1_000_000_000:
+        millions = n // 1_000_000
+        rem = n % 1_000_000
+        prefix = f"{cardinal_to_words(millions)} million"
+        return f"{prefix} {cardinal_to_words(rem)}" if rem else prefix
+    billions = n // 1_000_000_000
+    rem = n % 1_000_000_000
+    prefix = f"{cardinal_to_words(billions)} billion"
+    return f"{prefix} {cardinal_to_words(rem)}" if rem else prefix
+
+
+def ordinal_to_words(n: int) -> str:
+    if n in _ORDINALS_SPECIAL:
+        return _ORDINALS_SPECIAL[n]
+    if n < 100:
+        rem = n % 10
+        if rem and rem in _ORDINALS_SPECIAL:
+            return f"{_TENS[n // 10]}-{_ORDINALS_SPECIAL[rem]}"
+    base_card = cardinal_to_words(n)
+    if base_card.endswith("y"):
+        return base_card[:-1] + "ieth"
+    if base_card.endswith("e"):
+        return base_card[:-1] + "th"
+    return base_card + "th"
+
+
+def year_to_words(year: int) -> str:
+    if 2000 <= year <= 2009:
+        if year == 2000:
+            return "two thousand"
+        return f"two thousand {cardinal_to_words(year % 100)}"
+    if 1900 <= year <= 2099:
+        c1 = year // 100
+        c2 = year % 100
+        if c2 == 0:
+            return f"{cardinal_to_words(c1)} hundred"
+        if c2 < 10:
+            return f"{cardinal_to_words(c1)} oh-{cardinal_to_words(c2)}"
+        return f"{cardinal_to_words(c1)} {cardinal_to_words(c2)}"
+    return cardinal_to_words(year)
+
+
+def decimal_to_words(s: str) -> str:
+    if "." in s:
+        int_part, frac_part = s.split(".", 1)
+        int_words = cardinal_to_words(int(int_part))
+        frac_words = " ".join(_ONES[int(ch)] if ch.isdigit() else ch for ch in frac_part)
+        return f"{int_words} point {frac_words}"
+    return cardinal_to_words(int(s))
+
 
 def normalize_narration_for_tts(text: str) -> str:
     normalized = text
@@ -41,26 +137,60 @@ def normalize_narration_for_tts(text: str) -> str:
     normalized = re.sub(r"\bnroff_b\.exe\b", "N-roff B dot E X E", normalized, flags=re.IGNORECASE)
     normalized = re.sub(r"\bResum\.zip\b", "Resume dot zip", normalized, flags=re.IGNORECASE)
 
+    def _dollar_replacer(m: re.Match) -> str:
+        raw_num = m.group("num")
+        scale = (m.group("scale") or "").strip().lower()
+        if "." in raw_num:
+            num_str = decimal_to_words(raw_num)
+        else:
+            num_str = cardinal_to_words(int(raw_num))
+
+        if scale in ("m", "million"):
+            return f"{num_str} million dollars"
+        elif scale in ("b", "billion"):
+            return f"{num_str} billion dollars"
+        elif scale in ("k", "thousand"):
+            return f"{num_str} thousand dollars"
+        else:
+            if raw_num == "1":
+                return f"{num_str} dollar"
+            return f"{num_str} dollars"
+
+    normalized = re.sub(
+        r"\$(?P<num>[0-9]+(?:\.[0-9]+)?)\s*(?P<scale>million|billion|thousand|[MBKmbk])?\b",
+        _dollar_replacer,
+        normalized,
+    )
+
+    def _ordinal_replacer(m: re.Match) -> str:
+        num = int(m.group(1))
+        return ordinal_to_words(num)
+
+    normalized = re.sub(r"\b([0-9]+)(?:st|nd|rd|th)\b", _ordinal_replacer, normalized, flags=re.IGNORECASE)
+
+    def _year_replacer(m: re.Match) -> str:
+        year = int(m.group(1))
+        return year_to_words(year)
+
+    normalized = re.sub(r"\b(19\d\d|20\d\d)\b", _year_replacer, normalized)
+
+    def _number_replacer(m: re.Match) -> str:
+        num = int(m.group(1))
+        return cardinal_to_words(num)
+
+    normalized = re.sub(r"\b([0-9]+)\b", _number_replacer, normalized)
+
+    normalized = re.sub(r"\bNY Fed\b", "New York Fed", normalized)
+    normalized = re.sub(r"\bRCBC's\b", "R. C. B. C.'s", normalized)
+    normalized = re.sub(r"\bRCBC\b", "R. C. B. C.", normalized)
+    normalized = re.sub(r"\bSWIFT\b", "S. W. I. F. T.", normalized)
+    normalized = re.sub(r"\bOFAC\b", "O. F. A. C.", normalized)
     normalized = re.sub(r"\bMT103\b", "M-T one-oh-three", normalized)
     normalized = re.sub(r"\bNOP\b", "no-operation", normalized)
-    normalized = re.sub(r"\bRCBC\b", "R-C-B-C", normalized)
-    normalized = re.sub(r"\bOFAC\b", "O-F-A-C", normalized)
     normalized = re.sub(r"\bHP\b", "H-P", normalized)
     normalized = re.sub(r"\bH-P\b", "H-P", normalized)
     normalized = re.sub(r"\bFX\b", "F-X", normalized)
     normalized = re.sub(r"\bNY\b", "New York", normalized)
-
-    normalized = re.sub(r"\$951M\b", "nine-hundred fifty-one million dollars", normalized, flags=re.IGNORECASE)
-    normalized = re.sub(r"\$81M\b", "eighty-one million dollars", normalized, flags=re.IGNORECASE)
-    normalized = re.sub(r"\$850M\b", "eight-hundred fifty million dollars", normalized, flags=re.IGNORECASE)
-    normalized = re.sub(r"\$20M\b", "twenty million dollars", normalized, flags=re.IGNORECASE)
-    normalized = re.sub(r"\$65\.75M\b", "sixty-five point seven-five million dollars", normalized, flags=re.IGNORECASE)
-    normalized = re.sub(r"\$10\b", "ten-dollar", normalized)
-
-    normalized = re.sub(r"\$([0-9]+(?:\.[0-9]+)?)\s*billion\b", r"\1 billion dollars", normalized, flags=re.IGNORECASE)
-    normalized = re.sub(r"\$([0-9]+(?:\.[0-9]+)?)\s*million\b", r"\1 million dollars", normalized, flags=re.IGNORECASE)
-    normalized = re.sub(r"\$([0-9]+(?:\.[0-9]+)?)\s*M\b", r"\1 million dollars", normalized)
-    normalized = re.sub(r"\$([0-9]+(?:\.[0-9]+)?)\s*B\b", r"\1 billion dollars", normalized)
 
     return normalized
 
