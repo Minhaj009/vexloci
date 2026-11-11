@@ -1,7 +1,10 @@
 import React from 'react';
-import { Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
+import { Img, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { Fingerprint, Quote, Shield, UserCheck } from 'lucide-react';
 import { ParallaxCutout25DPropsSchema, SceneData } from '../../schemas/timeline.schema';
+import { resolveMediaSrc } from '../../lib/media';
+import { useSceneBeat } from '../director/SceneBeatContext';
+import { cn } from '../../lib/utils';
 
 interface ParallaxCutout25DProps {
   scene: SceneData;
@@ -10,6 +13,7 @@ interface ParallaxCutout25DProps {
 export const ParallaxCutout25D: React.FC<ParallaxCutout25DProps> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const beatState = useSceneBeat();
 
   const props = ParallaxCutout25DPropsSchema.parse(scene.props);
 
@@ -29,17 +33,43 @@ export const ParallaxCutout25D: React.FC<ParallaxCutout25DProps> = ({ scene }) =
     config: { damping: 14, mass: 0.9, stiffness: 90 },
   });
 
-  const resolvedBgSrc = props.bgImagePath
-    ? props.bgImagePath.startsWith('http') || props.bgImagePath.startsWith('data:')
-      ? props.bgImagePath
-      : staticFile(props.bgImagePath.replace(/^\/?public\//, ''))
-    : null;
+  const templateFocus =
+    beatState?.beat?.beatType === 'TEMPLATE_STATE'
+      ? beatState.beat.templateFocus
+      : undefined;
+  const focusSlot = templateFocus?.targetIndex ?? beatState?.beatIndex ?? 0;
+  const isSubjectFocused = Boolean(beatState) && focusSlot % 2 === 0;
+  const isQuoteFocused = Boolean(beatState) && focusSlot % 2 === 1;
+  const beatSpotlightEase = beatState
+    ? interpolate(beatState.beatProgress, [0, 0.18], [0, 1], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+      })
+    : 1;
+  const subjectScale = isSubjectFocused
+    ? interpolate(beatSpotlightEase, [0, 1], [1.0, 1.03])
+    : 1.0;
+  const subjectOpacity = beatState
+    ? isSubjectFocused
+      ? 1
+      : interpolate(beatSpotlightEase, [0, 1], [0.92, 0.76])
+    : 1;
+  const quoteScale = isQuoteFocused
+    ? interpolate(beatSpotlightEase, [0, 1], [1.0, 1.025])
+    : 1.0;
+  const quoteOpacity = beatState
+    ? isQuoteFocused
+      ? 1
+      : interpolate(beatSpotlightEase, [0, 1], [0.92, 0.76])
+    : 1;
+  const pulseOpacity = 0.55 + 0.45 * Math.sin(frame * 0.25);
 
-  const resolvedFgSrc = props.fgImagePath
-    ? props.fgImagePath.startsWith('http') || props.fgImagePath.startsWith('data:')
-      ? props.fgImagePath
-      : staticFile(props.fgImagePath.replace(/^\/?public\//, ''))
-    : null;
+  const resolvedBgSrc = props.bgImagePath ? resolveMediaSrc(props.bgImagePath) : null;
+  const resolvedFgSrc = props.fgImagePath ? resolveMediaSrc(props.fgImagePath) : null;
+  const exhibitIdentifier = `#EX-${scene.actNumber || 1}-${props.subjectName
+    .replace(/\s+/g, '_')
+    .toUpperCase()
+    .slice(0, 8)}`;
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-[#F8FAFC] select-none">
@@ -80,19 +110,27 @@ export const ParallaxCutout25D: React.FC<ParallaxCutout25DProps> = ({ scene }) =
       />
 
       <div
-        className="absolute right-16 bottom-0 top-0 w-[540px] flex items-end justify-center will-change-transform z-15"
+        className="absolute right-16 top-24 bottom-24 w-[540px] flex items-center justify-center will-change-transform z-15"
         style={{
-          transform: `scale(${fgScale})`,
-          transformOrigin: 'bottom center',
+          transform: `scale(${fgScale * subjectScale})`,
+          transformOrigin: 'center center',
+          opacity: subjectOpacity,
         }}
       >
         {resolvedFgSrc ? (
           <Img
             src={resolvedFgSrc}
-            className="w-full h-[90%] object-contain object-bottom drop-shadow-[0_20px_40px_rgba(15,23,42,0.12)]"
+            className="w-full h-full object-contain object-bottom drop-shadow-[0_20px_40px_rgba(15,23,42,0.12)]"
           />
         ) : (
-          <div className="relative w-[420px] h-[640px] mb-12 rounded-2xl bg-white border border-slate-200 shadow-[0_10px_35px_rgba(0,0,0,0.06)] overflow-hidden flex flex-col items-center justify-center p-8">
+          <div
+            className={cn(
+              'relative w-[420px] h-[640px] rounded-2xl bg-white overflow-hidden flex flex-col items-center justify-center p-8',
+              isSubjectFocused
+                ? 'border-2 border-blue-500 ring-4 ring-blue-500/20 shadow-[0_20px_50px_-10px_rgba(37,99,235,0.22)]'
+                : 'border border-slate-200 shadow-[0_10px_35px_rgba(0,0,0,0.06)]'
+            )}
+          >
             <div className="relative z-10 flex flex-col items-center">
               <div className="w-48 h-48 rounded-full border-2 border-slate-200 bg-slate-50 flex items-center justify-center p-3 text-blue-600">
                 <div className="w-full h-full rounded-full border border-dashed border-blue-300 flex items-center justify-center text-blue-600">
@@ -101,7 +139,14 @@ export const ParallaxCutout25D: React.FC<ParallaxCutout25DProps> = ({ scene }) =
               </div>
 
               <div className="mt-8 text-center">
-                <span className="px-3.5 py-1 rounded-full text-[11px] font-mono font-bold tracking-widest bg-blue-50 border border-blue-200 text-blue-700">
+                <span
+                  className={cn(
+                    'px-3.5 py-1 rounded-full text-[11px] font-mono font-bold tracking-widest border',
+                    isSubjectFocused
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : 'bg-blue-50 border-blue-200 text-blue-700'
+                  )}
+                >
                   SUBJECT RECORD IDENTIFIED
                 </span>
                 <div className="text-2xl font-heading font-bold text-slate-900 mt-3">
@@ -124,11 +169,18 @@ export const ParallaxCutout25D: React.FC<ParallaxCutout25DProps> = ({ scene }) =
       <div
         className="absolute left-16 top-24 bottom-24 w-[740px] z-20 will-change-transform flex items-center"
         style={{
-          transform: `translateX(${(1 - Math.max(0, dossierProgress)) * -120}px)`,
-          opacity: Math.max(0, dossierProgress),
+          transform: `translateX(${(1 - Math.max(0, dossierProgress)) * -120}px) scale(${quoteScale})`,
+          opacity: Math.max(0, dossierProgress) * quoteOpacity,
         }}
       >
-        <div className="w-full backdrop-blur-xl bg-white/95 border border-slate-200 rounded-2xl p-10 text-slate-900 shadow-[0_10px_35px_rgba(0,0,0,0.06)]">
+        <div
+          className={cn(
+            'w-full backdrop-blur-xl bg-white/95 rounded-2xl p-10 text-slate-900',
+            isQuoteFocused
+              ? 'border-2 border-blue-500 ring-4 ring-blue-500/20 shadow-[0_20px_50px_-10px_rgba(37,99,235,0.22)]'
+              : 'border border-slate-200 shadow-[0_10px_35px_rgba(0,0,0,0.06)]'
+          )}
+        >
           <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded bg-blue-50 border border-blue-200 text-blue-600">
@@ -147,7 +199,7 @@ export const ParallaxCutout25D: React.FC<ParallaxCutout25DProps> = ({ scene }) =
             <div className="flex items-center gap-2">
               <Fingerprint className="w-5 h-5 text-slate-400" />
               <span className="text-[10px] font-mono text-slate-500">
-                ID: #SEC-KCG-{props.subjectName.replace(/\s+/g, '_').toUpperCase().slice(0, 8)}
+                ID: {exhibitIdentifier}
               </span>
             </div>
           </div>
@@ -164,7 +216,7 @@ export const ParallaxCutout25D: React.FC<ParallaxCutout25DProps> = ({ scene }) =
 
           <div className="flex items-center justify-between pt-4 border-t border-slate-200 text-xs font-mono">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-blue-600" style={{ opacity: pulseOpacity }} />
               <span className="text-slate-600">DEPOSITION ADMISSIBLE UNDER RULE 803</span>
             </div>
             <span className="text-blue-600 font-bold">STATUS: ARCHIVED</span>

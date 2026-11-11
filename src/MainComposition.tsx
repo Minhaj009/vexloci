@@ -1,10 +1,7 @@
 import React from 'react';
 import { Series } from 'remotion';
 import { SceneData, TimelineData } from './schemas/timeline.schema';
-import { AtmosphericStage } from './components/shared/AtmosphericStage';
-import { ForensicHUD } from './components/shared/ForensicHUD';
-import { CameraRig } from './components/shared/CameraRig';
-import { FilmGrainOverlay } from './components/shared/FilmGrainOverlay';
+import { SceneDirector } from './components/director/SceneDirector';
 import { ForensicDocument } from './components/templates/ForensicDocument';
 import { TerminalReplay } from './components/templates/TerminalReplay';
 import { MarketCrashChart } from './components/templates/MarketCrashChart';
@@ -85,12 +82,9 @@ export const MainForensicComposition: React.FC<MainCompositionProps> = (props) =
           return (
             <Series.Sequence key={scene.sceneId} durationInFrames={durationInFrames}>
               <div className="relative w-full h-full overflow-hidden bg-[#F8FAFC]">
-                <AtmosphericStage scene={scene} timeline={timeline} />
-                <CameraRig scene={scene}>
+                <SceneDirector scene={scene} timeline={timeline}>
                   {renderTemplate(scene)}
-                </CameraRig>
-                <ForensicHUD scene={scene} timeline={timeline} />
-                <FilmGrainOverlay opacity={0.02} />
+                </SceneDirector>
               </div>
             </Series.Sequence>
           );

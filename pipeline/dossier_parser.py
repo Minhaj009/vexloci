@@ -12,7 +12,7 @@ import urllib.parse
 import urllib.request
 from pydantic import BaseModel, Field
 
-PROJECT_ROOT = Path("F:/Vexloci")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONTENT_DIR = PROJECT_ROOT / "content"
 
 
@@ -123,7 +123,7 @@ def parse_dossier_file(path: Path) -> ForensicDossier:
         target_victim = victim_match.group(1).strip() if victim_match else "Target Enterprise"
 
     perp_match = re.search(
-        r'(?:Lazarus Group|DarkSide|Sandworm|APT29|APT38|LockBit|Carbanak|Fancy Bear|Ilya Lichtenstein|Gary Wang|Sam Bankman-Fried|Do Kwon|Bernie Madoff|Nick Leeson|Jérôme Kerviel|Jho Low|Andrew Fastow|Elizabeth Holmes|Tom Hayes|Navinder Singh Sarao)',
+        r'(?:Lazarus Group|DarkSide|Sandworm|APT29|APT38|LockBit|Carbanak|Fancy Bear|Ilya(?:\s+["“\']?[A-Za-z]+["”\']?)?\s+Lichtenstein|Heather(?:\s+Rhiannon)?\s+Morgan|Gary Wang|Sam Bankman-Fried|Do Kwon|Bernie Madoff|Nick Leeson|Jérôme Kerviel|Jho Low|Andrew Fastow|Elizabeth Holmes|Tom Hayes|Navinder Singh Sarao)',
         text,
     )
     perpetrator_adversary = perp_match.group(0).strip() if perp_match else "Adversary Syndicate"
@@ -212,7 +212,7 @@ def parse_dossier_for_episode(folder_name_or_id: str) -> ForensicDossier:
             dossier = parse_dossier_file(md_file)
             if metadata.get("topic"):
                 dossier.title = metadata["topic"]
-            if metadata.get("core_forensic_mechanism") and len(dossier.technical_vector) < 20:
+            if metadata.get("core_forensic_mechanism") and (len(dossier.technical_vector) < 45 or dossier.technical_vector.endswith("(") or dossier.technical_vector.endswith("[")):
                 dossier.technical_vector = metadata["core_forensic_mechanism"]
             return dossier
 
@@ -221,6 +221,8 @@ def parse_dossier_for_episode(folder_name_or_id: str) -> ForensicDossier:
             dossier = parse_dossier_file(pdfs[0])
             if metadata.get("topic"):
                 dossier.title = metadata["topic"]
+            if metadata.get("core_forensic_mechanism") and (len(dossier.technical_vector) < 45 or dossier.technical_vector.endswith("(") or dossier.technical_vector.endswith("[")):
+                dossier.technical_vector = metadata["core_forensic_mechanism"]
             return dossier
 
     return fetch_autonomous_research(folder_name_or_id, output_folder=target_path)

@@ -92,9 +92,11 @@ export const Root: React.FC = () => {
         schema={TimelineSchema}
         defaultProps={defaultTimeline}
         calculateMetadata={({ props }) => {
-          const totalDurationSec =
-            props.totalDurationSec ||
-            props.scenes.reduce((acc, s) => acc + s.durationSec, 0);
+          const scenesTotal =
+            props.scenes && props.scenes.length > 0
+              ? props.scenes.reduce((acc, s) => acc + s.durationSec, 0)
+              : 0;
+          const totalDurationSec = Math.max(props.totalDurationSec || 0, scenesTotal);
           return {
             durationInFrames: Math.max(1, Math.ceil(totalDurationSec * (props.fps || 30))),
             fps: props.fps || 30,

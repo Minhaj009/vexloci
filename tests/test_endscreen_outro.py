@@ -44,7 +44,7 @@ class TestEndScreenOutro(unittest.TestCase):
             self.assertEqual(len(timeline["scenes"]), 2)
             outro = timeline["scenes"][-1]
             self.assertEqual(outro["sceneId"], "test_vid_outro")
-            self.assertEqual(outro["actNumber"], 5)
+            self.assertEqual(outro["actNumber"], 6)
             self.assertEqual(outro["template"], "EndScreenOutro")
             self.assertEqual(outro["startTimeSec"], 8.5)
             self.assertEqual(outro["durationSec"], 20.0)

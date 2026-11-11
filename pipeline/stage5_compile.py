@@ -7,9 +7,11 @@ Runs headless Playwright DOM bounding-box collision detection.
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+import re
+from typing import Any, Dict, List, Optional, Tuple
 import subprocess
 
+from pipeline.beat_director import compile_scene_visual_beats
 from pipeline.config import CANVAS_FPS, CANVAS_HEIGHT, CANVAS_WIDTH, PUBLIC_DIR
 
 CHOREOGRAPHY_TEMPLATES = [
@@ -49,21 +51,131 @@ def verify_choreography_and_anti_repetition(scenes: List[Dict[str, Any]]) -> Tup
 
 
 
-def _build_default_props_for_template(template: str, scene: Dict[str, Any], video_id: str = "") -> Dict[str, Any]:
+def _natural_asset_sort_key(filename: str) -> Tuple[str, int, str]:
+    match = re.search(r"(\d+)", filename)
+    prefix = filename[: match.start()] if match else filename
+    num = int(match.group(1)) if match else 0
+    return (prefix, num, filename)
+
+
+def _probe_video_duration(file_path: Path, default: float = 18.0) -> float:
+    try:
+        res = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-show_entries",
+                "format=duration",
+                "-of",
+                "default=noprint_wrappers=1:nokey=1",
+                str(file_path),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            dur = float(res.stdout.strip())
+            if dur > 0.0:
+                return round(dur, 2)
+    except Exception:
+        pass
+    return default
+
+
+def _extract_clip_index(path_str: str) -> Optional[str]:
+    match = re.search(r"(?:broll_archival_|archival_img_)(\d+)\.", str(path_str or ""))
+    return match.group(1) if match else None
+
+
+def _dedupe_secondary_media(media_path: str, available_assets: Optional[Dict[str, Any]]) -> List[str]:
+    assets = available_assets or {}
+    all_videos = [str(v) for v in assets.get("videos", []) if v]
+    all_images = [str(im) for im in assets.get("images", []) if im]
+    seen_paths = {media_path} if media_path else set()
+    covered_indices = set()
+    primary_idx = _extract_clip_index(media_path)
+    if primary_idx is not None:
+        covered_indices.add(primary_idx)
+
+    secondary: List[str] = []
+    for vp in all_videos:
+        if vp in seen_paths:
+            continue
+        seen_paths.add(vp)
+        secondary.append(vp)
+        v_idx = _extract_clip_index(vp)
+        if v_idx is not None:
+            covered_indices.add(v_idx)
+
+    for ip in all_images:
+        if ip in seen_paths:
+            continue
+        i_idx = _extract_clip_index(ip)
+        if i_idx is not None and i_idx in covered_indices:
+            continue
+        seen_paths.add(ip)
+        secondary.append(ip)
+
+    return secondary
+
+
+def _is_bangladesh_swift_topic(video_id: str = "", topic_title: str = "") -> bool:
+    combined = f"{video_id} {topic_title}".lower()
+    return "bangladesh" in combined or "swift" in combined
+
+
+def _discover_available_assets(assets_dir: Path, video_id: str) -> Dict[str, Any]:
+    search_dirs = [Path(assets_dir), PUBLIC_DIR / "runs" / video_id / "assets"]
+    video_files: Dict[str, Path] = {}
+    image_names = set()
+
+    for directory in search_dirs:
+        if not directory.exists() or not directory.is_dir():
+            continue
+        for p in directory.glob("broll_archival_*.mp4"):
+            if p.is_file() and p.name not in video_files:
+                video_files[p.name] = p
+        for p in directory.glob("archival_img_*.png"):
+            if p.is_file():
+                image_names.add(p.name)
+
+    videos: List[str] = []
+    durations: Dict[str, float] = {}
+    for name in sorted(video_files.keys(), key=_natural_asset_sort_key):
+        rel_path = f"runs/{video_id}/assets/{name}"
+        videos.append(rel_path)
+        durations[rel_path] = _probe_video_duration(video_files[name], default=18.0)
+
+    images = [f"runs/{video_id}/assets/{name}" for name in sorted(image_names, key=_natural_asset_sort_key)]
+    return {"videos": videos, "images": images, "durations": durations}
+
+
+def _build_default_props_for_template(
+    template: str,
+    scene: Dict[str, Any],
+    video_id: str = "",
+    available_assets: Optional[Dict[str, Any]] = None,
+    topic_title: str = "",
+) -> Dict[str, Any]:
     meta = scene.get("evidenceMetadata", {})
     words = scene.get("keyVisualKeywords", [])
     text = scene.get("narrationText", "")
     s_idx = scene.get("sceneIndex", 0)
 
+    is_bangladesh_swift = _is_bangladesh_swift_topic(video_id, topic_title)
     victim = meta.get("victim") or meta.get("target_victim") or "Target Enterprise"
-    damage = meta.get("financial_damage") or "$81 Million"
-    adversary = meta.get("perpetrator_adversary") or "Threat Actor Group"
+    damage = meta.get("financialDamage") or meta.get("financial_damage") or (
+        "$81 Million" if is_bangladesh_swift else "Significant Exposure"
+    )
+    adversary = meta.get("perpetrator_adversary") or meta.get("adversary") or "Threat Actor Group"
     tech_vector = meta.get("technical_vector") or "System Exploitation"
     is_knight = "knight" in video_id.lower() or "kcg" in video_id.lower()
 
     if template == "ForensicDocument":
         chapter = scene.get("chapterTitle", "").lower()
-        is_article = (
+        is_article = is_bangladesh_swift and (
             meta.get("isArticle", False)
             or "typo" in chapter
             or "article" in chapter
@@ -124,11 +236,14 @@ def _build_default_props_for_template(template: str, scene: Dict[str, Any], vide
                     f"The investigation revealed an exploit chain targeting {victim}, resulting in unauthorized liquidation of reserves totaling {damage}.",
                 ],
             ),
-            "highlightPhrases": [
-                "misspelled foundation as 'fandation'"
-                if is_article
-                else (words[0] if words else "unauthorized liquidation"),
-            ],
+            "highlightPhrases": meta.get(
+                "highlightPhrases",
+                [
+                    "misspelled foundation as 'fandation'"
+                    if is_article
+                    else (words[0] if words else "unauthorized liquidation"),
+                ],
+            ),
             "fontScale": 1.0,
         }
 
@@ -236,13 +351,23 @@ def _build_default_props_for_template(template: str, scene: Dict[str, Any], vide
                 ],
                 "fontScale": 1.0,
             }
-        return {
-            "waypoints": meta.get("waypoints", [
+        default_waypoints = (
+            [
                 {"city": "Dhaka", "country": "Bangladesh", "lat": 23.8103, "lon": 90.4125, "detail": "Bangladesh Bank Core // Motijheel Origin"},
                 {"city": "New York", "country": "USA", "lat": 40.7128, "lon": -74.0060, "detail": "Federal Reserve // Account Custodian"},
                 {"city": "Colombo", "country": "Sri Lanka", "lat": 6.9271, "lon": 79.8612, "detail": "Pan Asia Bank // Shalika Typo Intercept"},
                 {"city": "Manila", "country": "Philippines", "lat": 14.5995, "lon": 120.9842, "detail": "RCBC Jupiter & Casino VIP Conduit"},
-            ]),
+            ]
+            if is_bangladesh_swift
+            else [
+                {"city": "New York", "country": "USA", "lat": 40.7128, "lon": -74.0060, "detail": f"{victim} Core Ingress // Primary Ledger"},
+                {"city": "London", "country": "UK", "lat": 51.5074, "lon": -0.1278, "detail": f"Clearing Gateway // {tech_vector[:26]}"},
+                {"city": "Zurich", "country": "Switzerland", "lat": 47.3769, "lon": 8.5417, "detail": "Intermediary Relay // Encrypted Hop"},
+                {"city": "Singapore", "country": "Singapore", "lat": 1.3521, "lon": 103.8198, "detail": f"Exit Liquidity Node // {damage[:24]}"},
+            ]
+        )
+        return {
+            "waypoints": meta.get("waypoints", default_waypoints),
             "fontScale": 1.0,
         }
 
@@ -296,28 +421,49 @@ def _build_default_props_for_template(template: str, scene: Dict[str, Any], vide
                 ],
                 "fontScale": 1.0,
             }
-        return {
-            "startIsoTime": meta.get("startIsoTime", "2016-02-04T20:00:00Z"),
-            "endIsoTime": meta.get("endIsoTime", "2016-02-05T08:00:00Z"),
-            "milestones": meta.get("milestones", [
+        default_milestones = (
+            [
                 {"timeLabel": "20:00:00", "eventTitle": "Initial Access", "detail": "Adversary implants payload in core routing cluster"},
                 {"timeLabel": "23:45:00", "eventTitle": "Credential Theft", "detail": "Operator credentials forged for payment network"},
                 {"timeLabel": "04:12:00", "eventTitle": "Transfer Execution", "detail": "35 fraudulent wire orders dispatched to foreign custodians"},
                 {"timeLabel": "08:30:00", "eventTitle": "Discovery & Halt", "detail": "Printer malfunction triggers manual audit, halting remainder"},
-            ]),
+            ]
+            if is_bangladesh_swift
+            else [
+                {"timeLabel": "00:00:00", "eventTitle": "Initial Intrusion", "detail": f"Unauthorized entry detected on {victim} perimeter"},
+                {"timeLabel": "02:15:00", "eventTitle": "Control Bypass", "detail": f"Safeguards subverted via {tech_vector[:32]}"},
+                {"timeLabel": "05:40:00", "eventTitle": "Exfiltration", "detail": f"Unauthorized transfers totaling {damage} initiated"},
+                {"timeLabel": "09:10:00", "eventTitle": "Containment", "detail": "Incident response isolates compromised cluster"},
+            ]
+        )
+        return {
+            "startIsoTime": meta.get("startIsoTime", "2016-02-04T20:00:00Z"),
+            "endIsoTime": meta.get("endIsoTime", "2016-02-05T08:00:00Z"),
+            "milestones": meta.get("milestones", default_milestones),
             "fontScale": 1.0,
         }
 
     elif template == "ArchivalFootage":
+        assets = available_assets or {}
+        all_videos = list(assets.get("videos", []))
+        durations_map = assets.get("durations", {})
         media_path = meta.get("mediaPath")
         if not media_path:
-            media_path = f"runs/{video_id}/assets/broll_archival_{s_idx % 4}.mp4"
+            if all_videos:
+                media_path = all_videos[s_idx % len(all_videos)]
+            else:
+                media_path = f"runs/{video_id}/assets/broll_archival_{s_idx % 4}.mp4"
+        secondary_paths = _dedupe_secondary_media(media_path, assets)
+        probed_dur = durations_map.get(media_path, 18.0)
         return {
             "mediaType": meta.get("mediaType", "video"),
             "mediaPath": media_path,
             "headline": meta.get("headline", scene.get("chapterTitle", "PRIMARY FORENSIC ARCHIVE")),
             "caption": meta.get("caption", text[:120] if text else "Verified archival footage documented in the official investigative dossier."),
             "provenanceSource": meta.get("provenanceSource", "EXHIBIT ARCHIVE // VERIFIED SOURCE RECORD [WIKIMEDIA COMMONS]"),
+            "loop": meta.get("loop", True),
+            "videoDurationSec": meta.get("videoDurationSec", probed_dur),
+            "secondaryMediaPaths": meta.get("secondaryMediaPaths", secondary_paths),
             "fontScale": meta.get("fontScale", 1.0),
         }
     elif template == "EndScreenOutro":
@@ -351,7 +497,6 @@ def compile_timeline(
         words_data.get("words", []) if isinstance(words_data, dict) else words_data
     )
 
-    # Read 02_scene_timings.json if available to strictly partition audio segments
     scene_timings_path = script_path.parent / "02_scene_timings.json"
     scene_timings_map = {}
     scene_timings_list = []
@@ -363,14 +508,18 @@ def compile_timeline(
         except Exception:
             pass
 
+    available_assets = _discover_available_assets(Path(assets_dir), video_id)
+    is_bangladesh_swift = _is_bangladesh_swift_topic(video_id, topic_title)
     scenes: List[Dict[str, Any]] = script.get("scenes", [])
     compiled_scenes: List[Dict[str, Any]] = []
+    global_damage_used = False
+    broll_cursor = 0
 
     for s_idx, scene in enumerate(scenes):
         scene_words = []
         narration_text = scene.get("narrationText", "")
         scene_id = scene.get("sceneId", f"scene_{s_idx + 1:02d}")
-        chosen_template = scene.get("template")
+        chosen_template = scene.get("template") or "ForensicDocument"
         if chosen_template != "EndScreenOutro" and len(scenes) == 24 and s_idx < len(CHOREOGRAPHY_TEMPLATES):
             chosen_template = CHOREOGRAPHY_TEMPLATES[s_idx]
         template = chosen_template
@@ -383,10 +532,21 @@ def compile_timeline(
             start_time_sec = float(timing["audioStartSec"])
             duration_sec = float(timing["durationSec"])
             audio_end = float(timing["audioEndSec"])
+            next_timing = (
+                (
+                    scene_timings_map.get(scenes[s_idx + 1].get("sceneId"))
+                    or (scene_timings_list[s_idx + 1] if s_idx + 1 < len(scene_timings_list) else None)
+                )
+                if s_idx + 1 < len(scenes)
+                else None
+            )
+            upper_bound = audio_end + 0.15
+            if next_timing:
+                upper_bound = min(upper_bound, max(audio_end, float(next_timing["audioStartSec"]) - 0.15))
 
             for w in raw_words:
                 w_start = float(w.get("startSec", 0.0))
-                if start_time_sec <= w_start < (audio_end + 0.15):
+                if (start_time_sec - 0.15) <= w_start < upper_bound:
                     rel_start = max(0.0, round(w_start - start_time_sec, 2))
                     rel_end = max(rel_start + 0.1, round(float(w.get("endSec", w_start + 0.3)) - start_time_sec, 2))
                     scene_words.append({
@@ -414,29 +574,105 @@ def compile_timeline(
                         "endSec": w_end,
                     })
 
-        # Populate props
         props = scene.get("props")
-        if not props:
-            props = _build_default_props_for_template(template, scene, video_id=video_id)
+        if not props or template != scene.get("template"):
+            scene_with_idx = dict(scene)
+            scene_with_idx.setdefault("sceneIndex", s_idx)
+            props = _build_default_props_for_template(
+                template,
+                scene_with_idx,
+                video_id=video_id,
+                available_assets=available_assets,
+                topic_title=topic_title,
+            )
+        else:
+            props = dict(props)
+            for k in ("mediaPath", "articleImagePath", "fgImagePath", "bgImagePath"):
+                if k in props and isinstance(props[k], str) and props[k].startswith("runs/"):
+                    props[k] = re.sub(r'^runs/[^/]+/assets/', f'runs/{video_id}/assets/', props[k])
+            if template == "ArchivalFootage":
+                props.setdefault("loop", True)
+                media_p = props.get("mediaPath", "")
+                probed_dur = available_assets.get("durations", {}).get(media_p)
+                if probed_dur:
+                    props["videoDurationSec"] = probed_dur
+                else:
+                    props.setdefault("videoDurationSec", 18.0)
+                if "secondaryMediaPaths" not in props:
+                    props["secondaryMediaPaths"] = _dedupe_secondary_media(media_p, available_assets)
 
-        # Micro-Events and SFX Triggers
-        micro_events = scene.get("microEvents", [])
         assigned_accent = ACCENT_CYCLE[s_idx % len(ACCENT_CYCLE)]
+        chapter_title = scene.get("chapterTitle", f"Chapter {s_idx + 1}")
+        meta = scene.get("evidenceMetadata", {})
+        act_num = int(scene.get("actNumber", 1))
+        is_edge_scene = (s_idx == 0) or (act_num == 6) or (s_idx == len(scenes) - 1)
+        visual_beats = compile_scene_visual_beats(
+            scene_id=scene_id,
+            template=template,
+            narration_text=narration_text,
+            words=scene_words,
+            scene_duration_sec=round(duration_sec, 2),
+            evidence_metadata=meta,
+            available_assets=available_assets,
+            assigned_accent=assigned_accent,
+            props=props,
+            chapter_title=chapter_title,
+            allow_global_damage=(not global_damage_used) and is_edge_scene,
+            broll_offset=broll_cursor,
+        )
+        broll_cursor += sum(1 for vb in visual_beats if vb.get("beatType") in ("CUTAWAY_BROLL", "CUTAWAY_SPLIT"))
+
+        meta_dmg = str(meta.get("financialDamage") or meta.get("financial_damage") or "").strip().lower()
+        if meta_dmg and not global_damage_used:
+            for vb in visual_beats:
+                emitted = (
+                    (vb.get("cutawayStat") or {}).get("statValue")
+                    or ((vb.get("cutawaySplit") or {}).get("statCard") or {}).get("statValue")
+                    or (vb.get("hudOverlay") or {}).get("statCallout")
+                    or ""
+                ).strip().lower()
+                if emitted and (emitted == meta_dmg or emitted in meta_dmg):
+                    global_damage_used = True
+                    break
+
+        template_beats = [b for b in visual_beats if b.get("beatType") == "TEMPLATE_STATE"]
+        last_template_start = (
+            round(float(template_beats[-1]["startSec"]), 2)
+            if (visual_beats and template_beats and duration_sec > 15.0)
+            else None
+        )
+        late_offset = last_template_start if last_template_start is not None else (
+            round(duration_sec * 0.68, 2) if duration_sec > 15.0 else None
+        )
+        early_offset = round(duration_sec * 0.35, 2) if duration_sec > 15.0 else None
+
+        micro_events = [dict(me) for me in scene.get("microEvents", [])]
         for me in micro_events:
             me["accentColor"] = assigned_accent
-        sfx_triggers = scene.get("sfxTriggers", [])
+            if last_template_start is not None and me.get("action") in (
+                "STAMP_VERDICT", "PULSE_FAULT", "TRIGGER_CRASH_DROP"
+            ):
+                me["triggerOffsetSec"] = last_template_start
+
+        sfx_triggers = [dict(st) for st in scene.get("sfxTriggers", [])]
+        for st in sfx_triggers:
+            if last_template_start is not None and st.get("soundFile") in ("stamp_slam.wav", "sub_bass_drop.wav"):
+                st["offsetSec"] = last_template_start
 
         if not sfx_triggers:
             if template == "ForensicDocument":
+                highlight_sfx = round(duration_sec * 0.25, 2) if duration_sec > 15.0 else 2.0
+                stamp_sfx = late_offset if late_offset is not None else 4.5
                 sfx_triggers = [
                     {"offsetSec": 0.2, "soundFile": "paper_slide.wav", "volume": 0.6},
-                    {"offsetSec": 2.0, "soundFile": "highlighter_sweep.wav", "volume": 0.7},
-                    {"offsetSec": 4.5, "soundFile": "stamp_slam.wav", "volume": 0.8},
+                    {"offsetSec": highlight_sfx, "soundFile": "highlighter_sweep.wav", "volume": 0.7},
+                    {"offsetSec": stamp_sfx, "soundFile": "stamp_slam.wav", "volume": 0.8},
                 ]
             elif template == "TerminalReplay":
+                drop_sfx = late_offset if late_offset is not None else 2.5
                 sfx_triggers = [
                     {"offsetSec": 0.2, "soundFile": "keystroke_burst.wav", "volume": 0.6},
-                    {"offsetSec": 2.5, "soundFile": "sub_bass_drop.wav", "volume": 0.7},
+                    {"offsetSec": drop_sfx, "soundFile": "sub_bass_drop.wav", "volume": 0.7},
                 ]
             else:
                 sfx_triggers = [
@@ -446,44 +682,91 @@ def compile_timeline(
 
         if not micro_events:
             if template == "ForensicDocument":
-                hl_phrases = props.get("highlightPhrases") or ["Shalika Fandation"]
+                fallback_hl = ["Shalika Fandation"] if is_bangladesh_swift else [
+                    scene.get("keyVisualKeywords", ["forensic"])[0] if scene.get("keyVisualKeywords") else "forensic"
+                ]
+                hl_phrases = props.get("highlightPhrases") or fallback_hl
                 hl_text = hl_phrases[0]
-                stamp_text = props.get("stampText", "SANCTIONS FREEZE")
+                stamp_text = props.get("stampText", "SANCTIONS FREEZE" if is_bangladesh_swift else "CRITICAL ANOMALY")
+                hl_offset = round(duration_sec * 0.25, 2) if duration_sec > 15.0 else 2.0
+                stamp_offset = late_offset if late_offset is not None else 4.5
                 micro_events = [
                     {
                         "id": f"me_{s_idx}_highlight",
                         "triggerWord": hl_text.split()[0],
-                        "triggerOffsetSec": 2.0,
+                        "triggerOffsetSec": hl_offset,
                         "action": "HIGHLIGHT_TEXT",
                         "payloadText": hl_text,
                         "accentColor": "cyan",
                     },
                     {
                         "id": f"me_{s_idx}_stamp",
-                        "triggerWord": "sanctions",
-                        "triggerOffsetSec": 4.5,
+                        "triggerWord": "sanctions" if is_bangladesh_swift else "verdict",
+                        "triggerOffsetSec": stamp_offset,
                         "action": "STAMP_VERDICT",
                         "payloadText": stamp_text,
                         "accentColor": "crimson",
                     },
                 ]
             elif template == "TerminalReplay":
+                fault_offset = late_offset if late_offset is not None else 2.5
+                zoom_offset = early_offset if early_offset is not None else 5.0
                 micro_events = [
                     {
                         "id": f"me_{s_idx}_fault",
                         "triggerWord": "patch",
-                        "triggerOffsetSec": 2.5,
+                        "triggerOffsetSec": fault_offset,
                         "action": "PULSE_FAULT",
-                        "payloadText": "BINARY PATCH: 75 04 -> 90 90 (NOP NOP)",
+                        "payloadText": "BINARY PATCH: 75 04 -> 90 90 (NOP NOP)" if is_bangladesh_swift else "RUNTIME_AUTH_BYPASS",
                         "accentColor": "crimson",
                     },
                     {
                         "id": f"me_{s_idx}_zoom",
-                        "triggerWord": "database",
-                        "triggerOffsetSec": 5.0,
+                        "triggerWord": "database" if is_bangladesh_swift else "terminal",
+                        "triggerOffsetSec": zoom_offset,
                         "action": "ZOOM_IN",
-                        "payloadText": "ORACLE_BYPASS",
+                        "payloadText": "ORACLE_BYPASS" if is_bangladesh_swift else "PRIVILEGE_ESCALATION",
                         "accentColor": "cyan",
+                    },
+                ]
+            elif template == "MarketCrashChart":
+                crash_offset = late_offset if late_offset is not None else 4.5
+                micro_events = [
+                    {
+                        "id": f"me_{s_idx}_pulse",
+                        "triggerWord": "focus",
+                        "triggerOffsetSec": round(duration_sec * 0.35, 2),
+                        "action": "ZOOM_IN",
+                        "payloadText": "CRITICAL_PHASE",
+                        "accentColor": "cyan",
+                    },
+                    {
+                        "id": f"me_{s_idx}_crash",
+                        "triggerWord": "crash",
+                        "triggerOffsetSec": crash_offset,
+                        "action": "TRIGGER_CRASH_DROP",
+                        "payloadText": "LIQUIDITY_SHOCK",
+                        "accentColor": "crimson",
+                    },
+                ]
+            elif template in ("SystemBlueprint", "NetworkTopology"):
+                fault_offset = late_offset if late_offset is not None else 3.5
+                micro_events = [
+                    {
+                        "id": f"me_{s_idx}_pulse",
+                        "triggerWord": "focus",
+                        "triggerOffsetSec": round(duration_sec * 0.35, 2),
+                        "action": "ZOOM_IN",
+                        "payloadText": "CRITICAL_PHASE",
+                        "accentColor": "cyan",
+                    },
+                    {
+                        "id": f"me_{s_idx}_fault",
+                        "triggerWord": "fault",
+                        "triggerOffsetSec": fault_offset,
+                        "action": "PULSE_FAULT",
+                        "payloadText": "TOPOLOGY_BREACH",
+                        "accentColor": "crimson",
                     },
                 ]
             else:
@@ -499,7 +782,7 @@ def compile_timeline(
                     {
                         "id": f"me_{s_idx}_reveal",
                         "triggerWord": "reveal",
-                        "triggerOffsetSec": round(duration_sec * 0.70, 2),
+                        "triggerOffsetSec": round(duration_sec * 0.68, 2),
                         "action": "REVEAL_CALLOUT",
                         "payloadText": "FORENSIC_TAG",
                         "accentColor": "crimson",
@@ -507,17 +790,18 @@ def compile_timeline(
                 ]
 
         compiled_scene = {
-            "sceneId": scene.get("sceneId", f"scene_{s_idx + 1:02d}"),
+            "sceneId": scene_id,
             "actNumber": scene.get("actNumber", 1),
-            "template": scene["template"],
+            "template": template,
             "startTimeSec": round(start_time_sec, 2),
             "durationSec": round(duration_sec, 2),
-            "chapterTitle": scene.get("chapterTitle", f"Chapter {s_idx + 1}"),
+            "chapterTitle": chapter_title,
             "narrationText": narration_text,
             "words": scene_words,
             "sfxTriggers": sfx_triggers,
             "microEvents": micro_events,
             "props": props,
+            "visualBeats": visual_beats,
         }
         compiled_scenes.append(compiled_scene)
 
@@ -526,7 +810,7 @@ def compile_timeline(
         outro_start_sec = round(compiled_scenes[-1]["startTimeSec"] + compiled_scenes[-1]["durationSec"], 2) if compiled_scenes else 0.0
         outro_scene = {
             "sceneId": f"{video_id}_outro",
-            "actNumber": 5,
+            "actNumber": 6,
             "template": "EndScreenOutro",
             "startTimeSec": outro_start_sec,
             "durationSec": 20.0,
@@ -547,6 +831,7 @@ def compile_timeline(
                 }
             ],
             "props": _build_default_props_for_template("EndScreenOutro", {}, video_id=video_id),
+            "visualBeats": [],
         }
         compiled_scenes.append(outro_scene)
 

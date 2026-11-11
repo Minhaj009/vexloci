@@ -54,8 +54,8 @@ export const KineticCaption: React.FC<KineticCaptionProps> = ({ scene, className
 
   return (
     <div className={className || "absolute left-0 right-0 bottom-7 z-50 flex justify-center pointer-events-none select-none px-4"}>
-      <div className="inline-flex items-center gap-2.5 backdrop-blur-md bg-[#080A0F]/90 border border-white/10 px-6 py-2.5 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.8)] max-w-2xl">
-        <div className="flex items-center gap-2.5 text-xl font-heading tracking-tight">
+      <div className="inline-flex items-center gap-3 backdrop-blur-md bg-white/95 border-2 border-slate-300 rounded-2xl shadow-[0_12px_36px_rgba(15,23,42,0.15)] px-8 py-3.5 max-w-2xl text-2xl font-black">
+        <div className="flex items-center gap-3 text-2xl font-heading tracking-tight">
           {visibleWords.map((item, idx) => {
             const globalIdx = startIdx + idx;
             const isActive = globalIdx === activeIndex;
@@ -66,10 +66,10 @@ export const KineticCaption: React.FC<KineticCaptionProps> = ({ scene, className
                 key={`${item.word}-${globalIdx}`}
                 className={`transition-all duration-100 inline-block ${
                   isActive
-                    ? 'text-[#00F5D4] font-bold drop-shadow-[0_0_10px_rgba(0,245,212,0.8)] scale-105'
+                    ? 'text-[#2563EB] font-black scale-110 drop-shadow-sm'
                     : isPast
-                    ? 'text-white/85 font-medium'
-                    : 'text-slate-400/35 font-normal'
+                    ? 'text-slate-800 font-bold'
+                    : 'text-slate-400/60 font-medium'
                 }`}
               >
                 {item.word}

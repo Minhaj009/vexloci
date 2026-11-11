@@ -221,6 +221,10 @@ export const ArchivalFootagePropsSchema = z.object({
   caption: z.string(),
   provenanceSource: z.string(),
   licenseBadge: z.string().optional(),
+  videoDurationSec: z.number().gt(0).optional(),
+  videoStartOffsetSec: z.number().min(0).optional(),
+  loop: z.boolean().optional(),
+  secondaryMediaPaths: z.array(z.string()).optional(),
   fontScale: z.number().optional().default(1),
 });
 
@@ -232,6 +236,113 @@ export const EndScreenOutroPropsSchema = z.object({
   subscribeLabel: z.string().default('DECRYPT // SUBSCRIBE'),
 });
 
+export const VisualBeatTypeEnum = z.enum([
+  'TEMPLATE_STATE',
+  'CUTAWAY_BROLL',
+  'CUTAWAY_STATCARD',
+  'CUTAWAY_SPLIT',
+]);
+
+export const CameraMotionTypeEnum = z.enum([
+  'PUSH_IN',
+  'PULL_OUT',
+  'DRIFT_LEFT',
+  'DRIFT_RIGHT',
+  'FOCUS_PUNCH',
+  'IMPACT_SHAKE',
+]);
+
+export const BeatTransitionEnum = z.enum([
+  'CUT',
+  'DISSOLVE',
+  'WHIP_PAN',
+  'SCANLINE_GLITCH',
+]);
+
+export const TemplateBeatFocusSchema = z.object({
+  targetIndex: z.number().int().min(0).optional(),
+  targetId: z.string().optional(),
+  highlightMode: z.enum(['spotlight', 'pulse_fault', 'glow', 'reveal_step']).optional(),
+  spotlightIntensity: z.number().min(0).max(1).optional(),
+});
+
+export const CutawayBrollPropsSchema = z.object({
+  mediaPath: z.string(),
+  mediaType: z.enum(['video', 'image']).optional(),
+  headline: z.string(),
+  caption: z.string(),
+  provenanceSource: z.string(),
+  licenseBadge: z.string().optional(),
+  videoDurationSec: z.number().gt(0).optional(),
+  videoStartOffsetSec: z.number().min(0).optional(),
+});
+
+export const CutawayStatCardPropsSchema = z.object({
+  headline: z.string(),
+  statValue: z.string(),
+  prefix: z.string().optional(),
+  suffix: z.string().optional(),
+  deltaLabel: z.string().optional(),
+  deltaPositive: z.boolean().optional(),
+  subtext: z.string().optional(),
+  accentColor: z.enum(['cyan', 'amber', 'crimson']).optional(),
+});
+
+export const CutawaySplitPropsSchema = z.object({
+  splitRatio: z.number().min(0.25).max(0.75).optional(),
+  brollMedia: CutawayBrollPropsSchema.optional(),
+  statCard: CutawayStatCardPropsSchema.optional(),
+});
+
+export const HudBeatOverlaySchema = z.object({
+  phaseBadge: z.string(),
+  telemetryTag: z.string().optional(),
+  statCallout: z.string().optional(),
+});
+
+const BaseBeatFields = {
+  beatId: z.string(),
+  beatIndex: z.number().int().min(0),
+  startSec: z.number().min(0),
+  durationSec: z.number().gt(0.4),
+  triggerWord: z.string().optional(),
+  narrationSnippet: z.string().optional(),
+  cameraMotion: CameraMotionTypeEnum.optional(),
+  hudOverlay: HudBeatOverlaySchema.optional(),
+  transitionIn: BeatTransitionEnum.optional(),
+};
+
+export const TemplateStateBeatSchema = z.object({
+  ...BaseBeatFields,
+  beatType: z.literal('TEMPLATE_STATE'),
+  templateFocus: TemplateBeatFocusSchema.optional(),
+});
+
+export const CutawayBrollBeatSchema = z.object({
+  ...BaseBeatFields,
+  beatType: z.literal('CUTAWAY_BROLL'),
+  cutawayBroll: CutawayBrollPropsSchema,
+});
+
+export const CutawayStatCardBeatSchema = z.object({
+  ...BaseBeatFields,
+  beatType: z.literal('CUTAWAY_STATCARD'),
+  cutawayStat: CutawayStatCardPropsSchema,
+});
+
+export const CutawaySplitBeatSchema = z.object({
+  ...BaseBeatFields,
+  beatType: z.literal('CUTAWAY_SPLIT'),
+  cutawaySplit: CutawaySplitPropsSchema,
+});
+
+export const VisualBeatSchema = z.discriminatedUnion('beatType', [
+  TemplateStateBeatSchema,
+  CutawayBrollBeatSchema,
+  CutawayStatCardBeatSchema,
+  CutawaySplitBeatSchema,
+]);
+
 const BaseSceneFields = {
   sceneId: z.string(),
   actNumber: z.number().int().min(1).max(6),
@@ -242,6 +353,7 @@ const BaseSceneFields = {
   words: z.array(WordTimingSchema),
   sfxTriggers: z.array(SfxTriggerSchema),
   microEvents: z.array(MicroEventSchema).min(1),
+  visualBeats: z.array(VisualBeatSchema).optional(),
 };
 
 export const ForensicDocumentSceneSchema = z.object({
@@ -362,3 +474,12 @@ export type WordTiming = z.infer<typeof WordTimingSchema>;
 export type SceneData = z.infer<typeof SceneSchema>;
 export type TimelineData = z.infer<typeof TimelineSchema>;
 export type ShortCompositionData = z.infer<typeof ShortCompositionSchema>;
+export type VisualBeatType = z.infer<typeof VisualBeatTypeEnum>;
+export type CameraMotionType = z.infer<typeof CameraMotionTypeEnum>;
+export type BeatTransition = z.infer<typeof BeatTransitionEnum>;
+export type TemplateBeatFocus = z.infer<typeof TemplateBeatFocusSchema>;
+export type CutawayBrollProps = z.infer<typeof CutawayBrollPropsSchema>;
+export type CutawayStatCardProps = z.infer<typeof CutawayStatCardPropsSchema>;
+export type CutawaySplitProps = z.infer<typeof CutawaySplitPropsSchema>;
+export type HudBeatOverlay = z.infer<typeof HudBeatOverlaySchema>;
+export type VisualBeat = z.infer<typeof VisualBeatSchema>;

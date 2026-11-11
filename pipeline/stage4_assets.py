@@ -7,12 +7,13 @@ Executes 2.5D layer segmentation (rembg u2netp) and OpenCV dark-forensic color g
 Mirrors visual assets to public/runs/<video_id>/assets/ for staticFile() resolution.
 """
 
+import hashlib
 from io import BytesIO
 import json
 from pathlib import Path
 import shutil
 import subprocess
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -24,6 +25,56 @@ from pipeline.utils_vram import flush_cuda_memory
 
 WIKIMEDIA_USER_AGENT = "VexlociForensicDoc/1.0 (https://github.com/vexloci; vexloci.forensics@gmail.com)"
 DEFAULT_HEADERS = {"User-Agent": WIKIMEDIA_USER_AGENT}
+
+_NON_PHOTO_TERMS = (
+    "star trek",
+    "deep space",
+    "orion",
+    "episode",
+    "tv series",
+    "film",
+    "poster",
+    "logo",
+    "icon",
+    "flag",
+    "coat of arms",
+    "cartoon",
+    "comic",
+    "gargoyle",
+    "cathedral",
+    "sculpture",
+    "statue",
+    "actor",
+    "actress",
+    "red carpet",
+    "premiere",
+    "dld",
+    "concealed",
+    "espionage",
+    "museum",
+)
+
+CURATED_COMMONS_BACKUP_QUERIES: List[str] = [
+    "Department of Justice building Washington",
+    "J. Edgar Hoover Building Washington",
+    "Lower Manhattan skyline New York",
+    "New York Stock Exchange interior trading floor",
+    "Server rack data center",
+    "Daniel Patrick Moynihan United States Courthouse",
+    "Federal Reserve Bank of New York building",
+    "Fiber optic cables network switch",
+    "United States Capitol Washington",
+    "Wall Street New York",
+    "Microchip circuit board macro",
+    "Gold bullion coins vault",
+]
+
+_KEN_BURNS_MOTIONS = (
+    "zoompan=z='min(zoom+0.0008,1.20)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=540:s=1920x1080:fps=30",
+    "zoompan=z='1.15':x='(iw-iw/zoom)*(on/540)':y='ih/2-(ih/zoom/2)':d=540:s=1920x1080:fps=30",
+    "zoompan=z='1.15':x='(iw-iw/zoom)*(1-on/540)':y='ih/2-(ih/zoom/2)':d=540:s=1920x1080:fps=30",
+    "zoompan=z='max(1.0,1.20-0.20*on/540)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=540:s=1920x1080:fps=30",
+)
 
 VERIFIED_ENTITY_MAP: Dict[str, Dict[str, Any]] = {
     "bangladesh bank": {
@@ -110,107 +161,254 @@ VERIFIED_ENTITY_MAP: Dict[str, Dict[str, Any]] = {
         "local": ["test_tokyo.jpg", "test_tokyo.png"],
         "url": "https://upload.wikimedia.org/wikipedia/commons/b/b2/Skyscrapers_of_Shinjuku_2009_January.jpg",
     },
-    "bitcoin": {
-        "local": ["test_bitcoin.jpg", "test_bitcoin.png"],
-        "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1920px-Bitcoin.svg.png",
-    },
-    "colonial pipeline": {
-        "local": ["test_pipeline.jpg", "test_pipeline.png"],
-        "url": "https://upload.wikimedia.org/wikipedia/commons/2/27/Colonial_Pipeline_Company_logo.jpg",
-    },
-    "darkside": {
-        "local": ["test_darkside.jpg", "test_darkside.png"],
-        "url": "https://upload.wikimedia.org/wikipedia/commons/2/27/Colonial_Pipeline_Company_logo.jpg",
-    },
-    "ransomware": {
-        "local": ["test_ransomware.jpg", "test_ransomware.png"],
-        "url": "https://upload.wikimedia.org/wikipedia/commons/2/27/Colonial_Pipeline_Company_logo.jpg",
-    },
-    "swift": {
-        "local": ["test_swift.jpg", "test_swift.png"],
-        "url": "https://upload.wikimedia.org/wikipedia/commons/5/5f/Bangladesh_Bank_%2833398162476%29.jpg",
-    },
-    "reuters": {
-        "local": ["test_reuters.jpg", "test_reuters.png"],
-        "url": "https://upload.wikimedia.org/wikipedia/commons/5/5f/Bangladesh_Bank_%2833398162476%29.jpg",
-    },
-    "mandiant": {
-        "local": ["test_bb.jpg", "test_bb.png"],
-        "url": "https://upload.wikimedia.org/wikipedia/commons/5/5f/Bangladesh_Bank_%2833398162476%29.jpg",
-    },
 }
 
 
-def create_dark_forensic_plate(width: int = 1920, height: int = 1080) -> Image.Image:
+def create_dark_forensic_plate(width: int = 1920, height: int = 1080, seed: int = 0) -> Image.Image:
     plate = Image.new("RGB", (width, height), color=(14, 19, 31))
     draw = ImageDraw.Draw(plate)
     grid_color = (22, 29, 45)
     hairline_color = (28, 38, 58)
-    grid_step = 120
-    for x in range(0, width, grid_step):
+    grid_step = 120 + (seed % 5) * 16
+    offset_x = (seed * 37) % grid_step
+    offset_y = (seed * 53) % grid_step
+    for x in range(offset_x, width, grid_step):
         draw.line([(x, 0), (x, height)], fill=grid_color, width=1)
-    for y in range(0, height, grid_step):
+    for y in range(offset_y, height, grid_step):
         draw.line([(0, y), (width, y)], fill=grid_color, width=1)
-    cross_len = 14
+    cross_len = 14 + (seed % 4) * 3
     for cx, cy in [
         (96, 72),
         (width - 96, 72),
         (96, height - 72),
         (width - 96, height - 72),
-        (width // 2, height // 2),
+        (width // 2 + ((seed % 7) - 3) * 40, height // 2 + ((seed % 5) - 2) * 30),
     ]:
         draw.line([(cx - cross_len, cy), (cx + cross_len, cy)], fill=hairline_color, width=1)
         draw.line([(cx, cy - cross_len), (cx, cy + cross_len)], fill=hairline_color, width=1)
+    if seed > 0:
+        accent_y = 140 + (seed * 97) % max(1, height - 280)
+        draw.line([(96, accent_y), (width - 96, accent_y)], fill=hairline_color, width=1)
     return plate
 
 
-def fetch_wikimedia_photo(query: str, output_path: Path) -> bool:
-    endpoint = "https://en.wikipedia.org/w/api.php"
+def _is_valid_photo_candidate(
+    title: str,
+    url: str,
+    mime: str = "",
+    width: Optional[int] = None,
+    height: Optional[int] = None,
+) -> bool:
+    if not url:
+        return False
+    t_low = (title or "").lower()
+    u_low = (url or "").lower()
+    m_low = (mime or "").lower()
+    if (
+        ".svg" in u_low
+        or ".gif" in u_low
+        or "svg" in m_low
+        or "gif" in m_low
+        or ".svg" in t_low
+        or ".gif" in t_low
+    ):
+        return False
+    if any(term in t_low for term in _NON_PHOTO_TERMS):
+        return False
+    if any(term in u_low for term in ("_logo.", "company_logo", ".svg")):
+        return False
+    if width is not None and height is not None and (int(width) < 700 or int(height) < 420):
+        return False
+    return True
+
+
+def _try_save_unique_image_bytes(
+    raw_bytes: bytes,
+    source_url: str,
+    output_path: Path,
+    seen_urls: set,
+    seen_hashes: set,
+) -> bool:
+    if source_url and source_url in seen_urls:
+        return False
+    try:
+        with Image.open(BytesIO(raw_bytes)) as im:
+            if getattr(im, "is_animated", False):
+                return False
+            rgb_im = im.convert("RGB")
+            if rgb_im.width < 700 or rgb_im.height < 420:
+                return False
+            raw_hash = hashlib.sha256(rgb_im.tobytes()).hexdigest()
+            if raw_hash in seen_hashes:
+                return False
+            rgb_im.save(output_path)
+        apply_dark_forensic_lut(output_path, output_path)
+        if source_url:
+            seen_urls.add(source_url)
+        seen_hashes.add(raw_hash)
+        return True
+    except Exception:
+        return False
+
+
+def _search_commons_candidates(query: str) -> List[Tuple[str, str, Optional[int], Optional[int], str]]:
+    endpoint = "https://commons.wikimedia.org/w/api.php"
     params = {
         "action": "query",
         "generator": "search",
+        "gsrnamespace": 6,
         "gsrsearch": f"{query} filetype:bitmap",
-        "gsrlimit": 1,
+        "gsrlimit": 12,
         "prop": "imageinfo",
-        "iiprop": "url",
+        "iiprop": "url|size|mime",
         "format": "json",
     }
     try:
         resp = requests.get(endpoint, params=params, headers=DEFAULT_HEADERS, timeout=10)
-        data = resp.json()
-        pages = data.get("query", {}).get("pages", {})
-        for _, page_info in pages.items():
-            imageinfo = page_info.get("imageinfo", [])
-            if imageinfo and "url" in imageinfo[0]:
-                img_url = imageinfo[0]["url"]
-                img_resp = requests.get(img_url, headers=DEFAULT_HEADERS, timeout=15)
-                if img_resp.status_code == 200:
-                    with open(output_path, "wb") as f:
-                        f.write(img_resp.content)
-                    return True
+        if resp.status_code != 200:
+            return []
+        pages = resp.json().get("query", {}).get("pages", {})
+        sorted_pages = sorted(pages.values(), key=lambda p: p.get("index", 999))
+        results: List[Tuple[str, str, Optional[int], Optional[int], str]] = []
+        for page in sorted_pages:
+            title = page.get("title", "")
+            imageinfo = page.get("imageinfo") or []
+            if not imageinfo:
+                continue
+            info = imageinfo[0]
+            results.append((
+                title,
+                info.get("url", ""),
+                info.get("width"),
+                info.get("height"),
+                info.get("mime", ""),
+            ))
+        return results
     except Exception:
-        pass
+        return []
+
+
+def _search_wikipedia_fallback_candidates(query: str) -> List[Tuple[str, str, Optional[int], Optional[int], str]]:
+    endpoint = "https://en.wikipedia.org/w/api.php"
+    params = {
+        "action": "query",
+        "generator": "search",
+        "gsrsearch": query,
+        "gsrlimit": 6,
+        "prop": "pageimages|imageinfo",
+        "pilicense": "any",
+        "piprop": "thumbnail",
+        "pithumbsize": 1920,
+        "iiprop": "url|size|mime",
+        "format": "json",
+    }
+    try:
+        resp = requests.get(endpoint, params=params, headers=DEFAULT_HEADERS, timeout=10)
+        if resp.status_code != 200:
+            return []
+        pages = resp.json().get("query", {}).get("pages", {})
+        sorted_pages = sorted(pages.values(), key=lambda p: p.get("index", 999))
+        results: List[Tuple[str, str, Optional[int], Optional[int], str]] = []
+        for page in sorted_pages:
+            title = page.get("title", "")
+            thumb = page.get("thumbnail") or {}
+            imageinfo = page.get("imageinfo") or []
+            if thumb.get("source"):
+                results.append((title, thumb["source"], thumb.get("width"), thumb.get("height"), ""))
+            elif imageinfo:
+                info = imageinfo[0]
+                results.append((title, info.get("url", ""), info.get("width"), info.get("height"), info.get("mime", "")))
+        return results
+    except Exception:
+        return []
+
+
+def _fetch_single_unique_photo(
+    query: str,
+    output_path: Path,
+    seen_urls: set,
+    seen_hashes: set,
+    workspace_root: Path,
+    allow_entity_map: bool = True,
+) -> bool:
+    if allow_entity_map:
+        q_lower = query.lower()
+        for key, entity_data in VERIFIED_ENTITY_MAP.items():
+            if key not in q_lower:
+                continue
+            for loc_name in entity_data.get("local", []):
+                cand_path = workspace_root / loc_name
+                if not cand_path.exists():
+                    cand_path = output_path.parent / loc_name
+                if cand_path.exists():
+                    try:
+                        if _try_save_unique_image_bytes(
+                            cand_path.read_bytes(), "", output_path, seen_urls, seen_hashes
+                        ):
+                            return True
+                    except Exception:
+                        pass
+            entity_url = entity_data.get("url", "")
+            if entity_url and entity_url not in seen_urls and _is_valid_photo_candidate(key, entity_url):
+                try:
+                    resp = requests.get(entity_url, headers=DEFAULT_HEADERS, timeout=15)
+                    ctype = resp.headers.get("Content-Type", "").lower()
+                    if resp.status_code == 200 and "svg" not in ctype and "gif" not in ctype:
+                        if _try_save_unique_image_bytes(resp.content, entity_url, output_path, seen_urls, seen_hashes):
+                            return True
+                except Exception:
+                    pass
+            break
+
+    for search_fn in (_search_commons_candidates, _search_wikipedia_fallback_candidates):
+        for title, cand_url, width, height, mime in search_fn(query):
+            if cand_url in seen_urls or not _is_valid_photo_candidate(title, cand_url, mime, width, height):
+                continue
+            try:
+                resp = requests.get(cand_url, headers=DEFAULT_HEADERS, timeout=15)
+                ctype = resp.headers.get("Content-Type", "").lower()
+                if resp.status_code != 200 or "svg" in ctype or "gif" in ctype:
+                    continue
+                if _try_save_unique_image_bytes(resp.content, cand_url, output_path, seen_urls, seen_hashes):
+                    return True
+            except Exception:
+                continue
+    return False
+
+
+def fetch_wikimedia_photo(query: str, output_path: Path) -> bool:
+    for title, img_url, width, height, mime in _search_commons_candidates(query):
+        if not _is_valid_photo_candidate(title, img_url, mime, width, height):
+            continue
+        try:
+            img_resp = requests.get(img_url, headers=DEFAULT_HEADERS, timeout=15)
+            ctype = img_resp.headers.get("Content-Type", "").lower()
+            if img_resp.status_code == 200 and "svg" not in ctype and "gif" not in ctype:
+                with open(output_path, "wb") as f:
+                    f.write(img_resp.content)
+                return True
+        except Exception:
+            pass
     return False
 
 
 def _download_and_normalize_image(url: str, output_path: Path) -> bool:
+    if not _is_valid_photo_candidate("", url):
+        return False
     try:
         resp = requests.get(url, headers=DEFAULT_HEADERS, timeout=15)
         if resp.status_code != 200:
             return False
         content_type = resp.headers.get("Content-Type", "").lower()
-        if "svg" in content_type or url.lower().endswith(".svg"):
-            try:
-                import cairosvg
-
-                png_bytes = cairosvg.svg2png(bytestring=resp.content, output_width=1920)
-                img = Image.open(BytesIO(png_bytes)).convert("RGB")
-                img.save(output_path)
-                return True
-            except Exception:
-                pass
-        img = Image.open(BytesIO(resp.content)).convert("RGB")
-        img.save(output_path)
+        if "svg" in content_type or "gif" in content_type:
+            return False
+        with Image.open(BytesIO(resp.content)) as im:
+            if getattr(im, "is_animated", False):
+                return False
+            rgb_im = im.convert("RGB")
+            if rgb_im.width < 700 or rgb_im.height < 420:
+                return False
+            rgb_im.save(output_path)
         return True
     except Exception:
         return False
@@ -218,84 +416,69 @@ def _download_and_normalize_image(url: str, output_path: Path) -> bool:
 
 def fetch_copyright_free_images(queries: List[str], output_dir: Path) -> List[Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
+    cached_real_bytes: List[bytes] = []
+    for existing in sorted(output_dir.glob("archival_img_*.png")):
+        try:
+            if existing.stat().st_size >= 250_000:
+                cached_real_bytes.append(existing.read_bytes())
+        except Exception:
+            pass
+
     downloaded_images: List[Path] = []
+    seen_urls: set = set()
+    seen_hashes: set = set()
+    target_count = max(10, len(queries))
     workspace_root = Path.cwd()
 
-    for idx, query in enumerate(queries):
-        img_out = output_dir / f"archival_img_{idx}.png"
-        success = False
-        q_lower = query.lower()
-
-        matched_entity = None
-        for key, entity_data in VERIFIED_ENTITY_MAP.items():
-            if key in q_lower:
-                matched_entity = entity_data
-                break
-
-        if matched_entity:
-            for loc_name in matched_entity.get("local", []):
-                cand_path = workspace_root / loc_name
-                if not cand_path.exists():
-                    cand_path = output_dir / loc_name
-                if cand_path.exists():
-                    try:
-                        with Image.open(cand_path) as im:
-                            rgb_im = im.convert("RGB")
-                            rgb_im.save(img_out)
-                        apply_dark_forensic_lut(img_out, img_out)
-                        success = True
-                        downloaded_images.append(img_out)
-                        break
-                    except Exception:
-                        pass
-
-            if not success and matched_entity.get("url"):
-                if _download_and_normalize_image(matched_entity["url"], img_out):
-                    apply_dark_forensic_lut(img_out, img_out)
-                    success = True
-                    downloaded_images.append(img_out)
-
-        if not success:
-            try:
-                wiki_url = "https://en.wikipedia.org/w/api.php"
-                params = {
-                    "action": "query",
-                    "generator": "search",
-                    "gsrsearch": query,
-                    "gsrlimit": 3,
-                    "prop": "pageimages|imageinfo",
-                    "pilicense": "any",
-                    "piprop": "thumbnail",
-                    "pithumbsize": 1920,
-                    "iiprop": "url|mime",
-                    "format": "json",
-                }
-                resp = requests.get(wiki_url, params=params, headers=DEFAULT_HEADERS, timeout=10)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    pages = data.get("query", {}).get("pages", {})
-                    sorted_pages = sorted(pages.values(), key=lambda p: p.get("index", 999))
-                    for page in sorted_pages:
-                        cand_url = None
-                        thumb = page.get("thumbnail", {})
-                        if thumb and "source" in thumb:
-                            cand_url = thumb["source"]
-                        elif page.get("imageinfo"):
-                            cand_url = page["imageinfo"][0].get("url")
-
-                        if cand_url and _download_and_normalize_image(cand_url, img_out):
-                            apply_dark_forensic_lut(img_out, img_out)
-                            success = True
-                            downloaded_images.append(img_out)
-                            break
-            except Exception:
-                pass
-
-        if not success:
-            plate = create_dark_forensic_plate(1920, 1080)
-            plate.save(img_out)
-            apply_dark_forensic_lut(img_out, img_out)
+    for query in queries:
+        img_out = output_dir / f"archival_img_{len(downloaded_images)}.png"
+        if _fetch_single_unique_photo(query, img_out, seen_urls, seen_hashes, workspace_root):
             downloaded_images.append(img_out)
+
+    for backup_query in CURATED_COMMONS_BACKUP_QUERIES:
+        if len(downloaded_images) >= target_count:
+            break
+        img_out = output_dir / f"archival_img_{len(downloaded_images)}.png"
+        if _fetch_single_unique_photo(
+            backup_query,
+            img_out,
+            seen_urls,
+            seen_hashes,
+            workspace_root,
+            allow_entity_map=False,
+        ):
+            downloaded_images.append(img_out)
+
+    for raw_cached in cached_real_bytes:
+        if len(downloaded_images) >= target_count:
+            break
+        try:
+            with Image.open(BytesIO(raw_cached)) as im:
+                rgb_im = im.convert("RGB")
+                raw_hash = hashlib.sha256(rgb_im.tobytes()).hexdigest()
+                if raw_hash in seen_hashes:
+                    continue
+                seen_hashes.add(raw_hash)
+            idx = len(downloaded_images)
+            img_out = output_dir / f"archival_img_{idx}.png"
+            img_out.write_bytes(raw_cached)
+            downloaded_images.append(img_out)
+        except Exception:
+            pass
+
+    fallback_seed = 0
+    while len(downloaded_images) < target_count:
+        idx = len(downloaded_images)
+        img_out = output_dir / f"archival_img_{idx}.png"
+        plate = create_dark_forensic_plate(1920, 1080, seed=idx + fallback_seed + 1)
+        raw_hash = hashlib.sha256(plate.tobytes()).hexdigest()
+        if raw_hash in seen_hashes:
+            fallback_seed += 1
+            continue
+        seen_hashes.add(raw_hash)
+        plate.save(img_out)
+        apply_dark_forensic_lut(img_out, img_out)
+        downloaded_images.append(img_out)
 
     return downloaded_images
 
@@ -307,8 +490,9 @@ def fetch_copyright_free_video_clips(
 ) -> List[Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     processed_clips: List[Path] = []
+    total_clips = max(len(queries), len(image_fallbacks) if image_fallbacks else 0)
 
-    for idx, _ in enumerate(queries):
+    for idx in range(total_clips):
         output_mp4 = output_dir / f"broll_archival_{idx}.mp4"
         src_img: Optional[Path] = None
         if image_fallbacks and idx < len(image_fallbacks) and image_fallbacks[idx].exists():
@@ -319,14 +503,15 @@ def fetch_copyright_free_video_clips(
         temp_created = False
         if not src_img or not src_img.exists():
             src_img = output_dir / f"temp_plate_{idx}.png"
-            plate = create_dark_forensic_plate(1920, 1080)
+            plate = create_dark_forensic_plate(1920, 1080, seed=idx + 1)
             plate.save(src_img)
             temp_created = True
 
+        zoompan_expr = _KEN_BURNS_MOTIONS[idx % len(_KEN_BURNS_MOTIONS)]
         filter_chain = (
             "scale=1920:1080:force_original_aspect_ratio=increase,"
             "crop=1920:1080,"
-            "zoompan=z='min(zoom+0.0008,1.20)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=540:s=1920x1080:fps=30,"
+            f"{zoompan_expr},"
             "eq=saturation=0.68:contrast=1.12,"
             "colorbalance=rs=-0.04:gs=0.02:bs=0.08,"
             "vignette=PI/4,"
@@ -447,6 +632,7 @@ def generate_sample_article_screenshot(
     date_str: str = "FEBRUARY 12, 2016",
     width: int = 1400,
     height: int = 800,
+    body_lines: Optional[List[str]] = None,
 ) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     img = Image.new("RGB", (width, height), color=(15, 20, 32))
@@ -471,21 +657,35 @@ def generate_sample_article_screenshot(
 
     draw.rectangle([(45, 208), (width - 45, 328)], fill=(28, 24, 16), outline=(245, 158, 11), width=2)
     draw.text((65, 222), "CRITICAL REVEAL // SMOKING GUN PARAGRAPH:", font=quote_header_font, fill=(245, 158, 11))
-    draw.text((65, 258), f'"{highlight_text}"', font=quote_body_font, fill=(255, 255, 255))
+    draw.text((65, 258), f'"{highlight_text[:110]}"', font=quote_body_font, fill=(255, 255, 255))
 
-    body_lines = [
-        "Hackers breached Bangladesh Bank credentials to initiate fraudulent SWIFT transfers to the New York Fed.",
-        "A routine $20 million transfer instruction addressed to the Shalika Foundation triggered suspicion.",
-        "Intermediary routing clerks halted the transaction after noticing hackers misspelled foundation as 'fandation'.",
-        "The emergency audit prevented an additional $850 million from clearing, confining the theft to $81 million.",
-    ]
+    if not body_lines:
+        if "bangladesh" in headline.lower():
+            body_lines = [
+                "Hackers breached Bangladesh Bank credentials to initiate fraudulent SWIFT transfers to the New York Fed.",
+                "A routine $20 million transfer instruction addressed to the Shalika Foundation triggered suspicion.",
+                "Intermediary routing clerks halted the transaction after noticing hackers misspelled foundation as 'fandation'.",
+                "The emergency audit prevented an additional $850 million from clearing, confining the theft to $81 million.",
+            ]
+        else:
+            body_lines = [
+                f"Forensic investigators unsealed findings documenting systemic breaches across critical infrastructure.",
+                f"Unauthorized actors weaponized privileged credentials to circumvent automated security controls.",
+                f"Emergency containment procedures were initiated following anomalous data flows and operational disruptions.",
+                f"The resulting investigation established fundamental lessons in defense-in-depth and architectural resilience.",
+            ]
     y_offset = 355
     for line in body_lines:
         draw.text((45, y_offset), line, font=body_font, fill=(203, 213, 225))
         y_offset += 38
 
     draw.line([(45, 720), (width - 45, 720)], fill=(30, 41, 59), width=1)
-    draw.text((45, 742), "EVIDENCE REPOSITORY // EXHIBIT DOC-2016-BB", font=meta_font, fill=(100, 116, 139))
+    footer_left = (
+        "EVIDENCE REPOSITORY // EXHIBIT DOC-2016-BB"
+        if "bangladesh" in headline.lower()
+        else "EXHIBIT RECORD // OFFICIAL ARCHIVE"
+    )
+    draw.text((45, 742), footer_left, font=meta_font, fill=(100, 116, 139))
     draw.text((width - 450, 742), "OFFICIAL VERIFIED RECORD // DOCKET ARCHIVE", font=meta_font, fill=(100, 116, 139))
 
     img.save(output_path)
@@ -573,7 +773,18 @@ def process_assets_for_run(
 
     article_img_path = run_assets_dir / "article_reuters.png"
     if not article_img_path.exists():
-        generate_sample_article_screenshot(article_img_path)
+        if script_data and script_data.get("topic"):
+            topic_str = script_data.get("topic")
+            generate_sample_article_screenshot(
+                article_img_path,
+                publication="REUTERS",
+                headline=f"Forensic Autopsy: {topic_str[:70]}",
+                byline="By Cybersecurity & Financial Crime Investigative Bureau",
+                highlight_text=f"Official records confirm critical security breach impacting {topic_str[:55]}.",
+                date_str="OFFICIAL INVESTIGATION",
+            )
+        else:
+            generate_sample_article_screenshot(article_img_path)
     if article_img_path.exists():
         shutil.copy2(article_img_path, public_assets_dir / "article_reuters.png")
 

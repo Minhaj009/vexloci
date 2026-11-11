@@ -117,7 +117,7 @@ def compile_research_and_script(
     script_path = output_dir / "01_script.json"
 
     dossier = parse_dossier_for_episode(video_id or topic)
-    raw_script = compile_forensic_script(dossier, mode=mode, api_key=api_key)
+    raw_script = compile_forensic_script(dossier, mode=mode, api_key=api_key, video_id=video_id)
     raw_script["videoId"] = video_id
 
     is_valid, narrative_errors = NarrativeContractValidator.validate_script(raw_script)

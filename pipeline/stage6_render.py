@@ -121,11 +121,21 @@ def mux_final_audio_sidechain(
     if not music_path.exists():
         generate_dark_synth_score(music_path)
 
+    total_dur = 763.24
+    timeline_path = video_path.parent / "05_timeline.json"
+    if timeline_path.exists():
+        try:
+            with open(timeline_path, "r", encoding="utf-8") as tf:
+                tl = json.load(tf)
+                total_dur = float(tl.get("totalDurationSec", 763.24))
+        except Exception:
+            pass
+
     if not ENABLE_SFX:
         filtergraph = (
+            f"[1:a]apad=whole_dur={total_dur},asplit=2[v_sc][voice];"
             "[2:a]volume=0.65[bg_in];"
-            "[bg_in][1:a]sidechaincompress=threshold=0.12:ratio=3.2:attack=30:release=450[bg_ducked];"
-            "[1:a]volume=1.0[voice];"
+            "[bg_in][v_sc]sidechaincompress=threshold=0.12:ratio=3.2:attack=30:release=450[bg_ducked];"
             "[voice][bg_ducked]amix=inputs=2:duration=first:weights=1.0 0.9[mixed];"
             "[mixed]loudnorm=I=-14:LRA=7:TP=-1.5[out_a]"
         )
@@ -148,9 +158,9 @@ def mux_final_audio_sidechain(
         ]
     else:
         filtergraph = (
+            f"[1:a]apad=whole_dur={total_dur},asplit=2[v_sc][voice];"
             "[3:a]volume=0.60[bg_in];"
-            "[bg_in][1:a]sidechaincompress=threshold=0.12:ratio=3.2:attack=30:release=450[bg_ducked];"
-            "[1:a]volume=1.0[voice];"
+            "[bg_in][v_sc]sidechaincompress=threshold=0.12:ratio=3.2:attack=30:release=450[bg_ducked];"
             "[2:a]volume=0.85[sfx];"
             "[voice][bg_ducked][sfx]amix=inputs=3:duration=first:dropout_transition=2:weights=1.0 0.85 0.7[mixed];"
             "[mixed]loudnorm=I=-14:LRA=7:TP=-1.5[out_a]"

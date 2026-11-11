@@ -9,6 +9,7 @@ import {
   User,
 } from 'lucide-react';
 import { NetworkTopologyPropsSchema, SceneData } from '../../schemas/timeline.schema';
+import { useSceneBeat } from '../director/SceneBeatContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { BorderBeam } from '../ui/border-beam';
@@ -28,6 +29,7 @@ interface NodePosition {
 export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const beatState = useSceneBeat();
 
   const props = NetworkTopologyPropsSchema.parse(scene.props);
 
@@ -83,14 +85,26 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
     (n) => n.status === 'compromised' || (isFault && n.type === 'server')
   ).length;
 
+  const nodeCount = props.nodes.length;
+  const beatFocus =
+    beatState?.beat?.beatType === 'TEMPLATE_STATE'
+      ? beatState.beat.templateFocus
+      : undefined;
+  const rawFocusNodeIdx =
+    beatFocus?.targetIndex ?? (beatState ? beatState.beatIndex : 0);
+  const activeNodeIdx = nodeCount > 0 ? Math.max(0, rawFocusNodeIdx) % nodeCount : -1;
+  const activeNode = activeNodeIdx >= 0 ? props.nodes[activeNodeIdx] : null;
+  const activeNodeId = activeNode?.id;
+  const pulseOpacity = 0.55 + 0.45 * Math.sin(frame * 0.25);
+
   const radarAngle = (frame * 2.2) % 360;
   const radarRad = (radarAngle * Math.PI) / 180;
   const radarLeadX = centerX + 480 * Math.cos(radarRad);
   const radarLeadY = centerY + 480 * Math.sin(radarRad);
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-[#F8FAFC] select-none">
-      <div className="backdrop-blur-md bg-white/95 border-b border-slate-200 px-10 py-4 absolute top-0 left-0 right-0 z-20 flex items-center justify-between text-slate-900 shadow-xs">
+    <div className="relative w-full h-full overflow-hidden bg-[#F8FAFC] select-none flex flex-col pt-12 pb-10 px-10 gap-5">
+      <div className="relative z-20 backdrop-blur-md bg-white/95 border border-slate-200 rounded-2xl px-8 py-4 flex items-center justify-between text-slate-900 shadow-xs shrink-0">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-600">
             <Layers className="w-6 h-6" />
@@ -114,14 +128,15 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
           </Badge>
           <Badge
             variant={isFault ? 'destructive' : 'cyan'}
-            className={cn('font-bold', isFault && 'animate-pulse')}
+            className="font-bold"
+            style={isFault ? { opacity: pulseOpacity } : undefined}
           >
             {isFault ? 'CRITICAL SYSTEM BREACH' : 'MESH ENCRYPTED'}
           </Badge>
         </div>
       </div>
 
-      <div className="absolute top-[88px] left-10 right-10 bottom-28 flex gap-6">
+      <div className="relative flex-1 min-h-0 flex gap-6">
         <div className="relative flex-1 rounded-2xl bg-white border border-slate-200/90 overflow-hidden shadow-[0_4px_24px_rgba(15,23,42,0.04)]">
           <svg className="w-full h-full overflow-visible" viewBox={`0 0 ${width} ${height}`}>
             <defs>
@@ -195,21 +210,27 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
               const dotX = oneMinusT * oneMinusT * p1.x + 2 * oneMinusT * photonRatio * midX + photonRatio * photonRatio * p2.x;
               const dotY = oneMinusT * oneMinusT * p1.y + 2 * oneMinusT * photonRatio * midY + photonRatio * photonRatio * p2.y;
               const edgeColor = isFault ? '#DC2626' : '#2563EB';
+              const isEdgeActive = Boolean(
+                activeNodeId && (edge.from === activeNodeId || edge.to === activeNodeId)
+              );
 
               return (
-                <g key={`${edge.from}-${edge.to}-${idx}`}>
+                <g
+                  key={`${edge.from}-${edge.to}-${idx}`}
+                  opacity={beatState ? (isEdgeActive ? 1 : 0.45) : 1}
+                >
                   <path
                     d={d}
                     fill="none"
                     stroke="#CBD5E1"
-                    strokeWidth="2"
+                    strokeWidth={isEdgeActive ? '2.5' : '2'}
                     strokeOpacity="0.9"
                   />
                   <path
                     d={d}
                     fill="none"
                     stroke={edgeColor}
-                    strokeWidth="2.5"
+                    strokeWidth={isEdgeActive ? '3' : '2.5'}
                     strokeDasharray="6 28"
                     strokeDashoffset={packetOffset}
                   />
@@ -217,7 +238,7 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
                   <circle
                     cx={dotX}
                     cy={dotY}
-                    r={3.5}
+                    r={isEdgeActive ? 4.5 : 3.5}
                     fill={edgeColor}
                   />
 
@@ -230,8 +251,8 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
                         height="20"
                         rx="6"
                         fill="#FFFFFF"
-                        stroke="#CBD5E1"
-                        strokeWidth="1"
+                        stroke={isEdgeActive ? edgeColor : '#CBD5E1'}
+                        strokeWidth={isEdgeActive ? '1.5' : '1'}
                       />
                       <text
                         y="4"
@@ -249,35 +270,59 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
               );
             })}
 
-            {props.nodes.map((node) => {
+            {props.nodes.map((node, nodeIdx) => {
               const pos = nodePositions[node.id];
               if (!pos) return null;
 
               const isCompromised =
                 node.status === 'compromised' || (isFault && node.type === 'server');
+              const isFocusedNode = nodeIdx === activeNodeIdx;
               const nodeStroke = isCompromised ? '#DC2626' : '#2563EB';
               const nodeFill = isCompromised ? '#FEF2F2' : '#FFFFFF';
               const pulseScale = isCompromised ? 1 + Math.sin(frame * 0.25) * 0.08 : 1;
+              const focusScale = isFocusedNode ? 1.08 : 1;
+              const focusHaloRadius = 56 + Math.sin(frame * 0.18) * 5;
+              const focusHaloOpacity = 0.55 + Math.sin(frame * 0.18) * 0.25;
 
               return (
                 <g
                   key={node.id}
-                  transform={`translate(${pos.x}, ${pos.y}) scale(${appearProgress * pulseScale})`}
+                  transform={`translate(${pos.x}, ${pos.y}) scale(${appearProgress * pulseScale * focusScale})`}
+                  opacity={beatState && !isFocusedNode ? 0.72 : 1}
                 >
+                  {isFocusedNode && (
+                    <>
+                      <circle
+                        r={focusHaloRadius}
+                        fill="none"
+                        stroke={nodeStroke}
+                        strokeWidth="2"
+                        strokeOpacity={focusHaloOpacity}
+                      />
+                      <circle
+                        r="38"
+                        fill="none"
+                        stroke={nodeStroke}
+                        strokeWidth="2.5"
+                        strokeOpacity={0.9}
+                      />
+                    </>
+                  )}
+
                   <circle
                     r="46"
                     fill="none"
                     stroke={nodeStroke}
                     strokeWidth="1.2"
                     strokeDasharray="4 4"
-                    strokeOpacity={0.4}
+                    strokeOpacity={isFocusedNode ? 0.75 : 0.4}
                   />
 
                   <circle
                     r="30"
                     fill={nodeFill}
                     stroke={nodeStroke}
-                    strokeWidth="2.5"
+                    strokeWidth={isFocusedNode ? '3.5' : '2.5'}
                   />
 
                   <foreignObject x="-15" y="-15" width="30" height="30">
@@ -302,12 +347,26 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
                     {node.label}
                   </text>
 
+                  {isFocusedNode && (
+                    <rect
+                      x="-78"
+                      y="54"
+                      width="156"
+                      height="15"
+                      rx="7.5"
+                      fill={isCompromised ? '#FEE2E2' : '#DBEAFE'}
+                      stroke={nodeStroke}
+                      strokeWidth="1"
+                    />
+                  )}
+
                   <text
                     y="64"
                     textAnchor="middle"
-                    fill={isCompromised ? '#DC2626' : '#64748B'}
+                    fill={isCompromised ? '#DC2626' : isFocusedNode ? '#1D4ED8' : '#64748B'}
                     fontSize="9"
                     fontFamily="JetBrains Mono"
+                    fontWeight={isFocusedNode ? 'bold' : 'normal'}
                   >
                     [{node.type.toUpperCase()}] // {isCompromised ? 'COMPROMISED' : 'NORMAL'}
                   </text>
@@ -355,6 +414,58 @@ export const NetworkTopology: React.FC<NetworkTopologyProps> = ({ scene }) => {
                 </span>
               </div>
             </Card>
+
+            {props.nodes.length > 0 && (
+              <Card className="p-3 rounded-xl bg-slate-50 border-slate-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] text-slate-500 tracking-widest uppercase">
+                    ACTIVE NODE INSPECTOR
+                  </span>
+                  {activeNode && (
+                    <Badge
+                      variant={
+                        activeNode.status === 'compromised' || (isFault && activeNode.type === 'server')
+                          ? 'destructive'
+                          : 'default'
+                      }
+                      className="text-[9px] py-0"
+                    >
+                      {activeNode.type.toUpperCase()}
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {props.nodes.map((node, idx) => {
+                    const isNodeFocused = idx === activeNodeIdx;
+                    const isNodeCompromised =
+                      node.status === 'compromised' || (isFault && node.type === 'server');
+
+                    return (
+                      <Badge
+                        key={node.id}
+                        variant={
+                          isNodeCompromised
+                            ? 'destructive'
+                            : isNodeFocused
+                              ? 'default'
+                              : 'outline'
+                        }
+                        className={cn(
+                          'text-[10px] font-mono',
+                          isNodeFocused
+                            ? isNodeCompromised
+                              ? 'ring-2 ring-rose-500 bg-rose-100 text-rose-800 font-bold shadow-xs'
+                              : 'ring-2 ring-blue-500 bg-blue-100 text-blue-800 font-bold shadow-xs'
+                            : 'opacity-60'
+                        )}
+                      >
+                        {node.label}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
 
             <Card className="p-3 rounded-xl bg-slate-50 border-slate-200">
               <div className="text-[10px] text-slate-500 tracking-widest uppercase">

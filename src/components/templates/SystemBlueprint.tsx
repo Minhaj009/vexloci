@@ -12,6 +12,7 @@ import {
   HardDrive,
 } from 'lucide-react';
 import { SceneData, SystemBlueprintPropsSchema } from '../../schemas/timeline.schema';
+import { useSceneBeat } from '../director/SceneBeatContext';
 import { cn } from '../../lib/utils';
 
 interface SystemBlueprintProps {
@@ -21,6 +22,7 @@ interface SystemBlueprintProps {
 export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const beatState = useSceneBeat();
 
   const props = SystemBlueprintPropsSchema.parse(scene.props);
 
@@ -80,12 +82,51 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
 
 
 
-  const cameraZoom = interpolate(frame, [0, totalFrames], [1.0, 1.018], {
-    extrapolateRight: 'clamp',
-  });
+  const templateFocus =
+    beatState?.beat?.beatType === 'TEMPLATE_STATE'
+      ? beatState.beat.templateFocus
+      : undefined;
+  const focusTargetById = templateFocus?.targetId
+    ? props.blocks.findIndex((b) => b.id === templateFocus.targetId)
+    : -1;
+  const rawFocusIdx =
+    templateFocus?.targetIndex ??
+    (focusTargetById >= 0 ? focusTargetById : undefined) ??
+    beatState?.beatIndex ??
+    (blocksCount > 0 ? Math.floor((frame / totalFrames) * blocksCount) : 0);
+  const activeIdx = blocksCount > 0 ? Math.max(0, rawFocusIdx) % blocksCount : -1;
+  const activeBlockId = activeIdx >= 0 ? props.blocks[activeIdx]?.id : undefined;
+
+  const spotlightFade = beatState?.beat
+    ? beatState.beatIndex > 0
+      ? 1
+      : interpolate(frame, [0, 12], [0.25, 1], {
+          extrapolateLeft: 'clamp',
+          extrapolateRight: 'clamp',
+        })
+    : interpolate(
+        frame,
+        [Math.round(totalFrames * 0.22), Math.round(totalFrames * 0.34)],
+        [0, 1],
+        { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
+      );
+  const pulseOpacity = 0.55 + 0.45 * Math.sin(frame * 0.25);
+
+  const systemTitleLower = props.systemTitle.toLowerCase();
+  const isBangladeshSwift =
+    systemTitleLower.includes('bangladesh') || systemTitleLower.includes('swift');
+  const operationSubtitle = isBangladeshSwift
+    ? 'MOTIJHEEL 10TH FLOOR OPERATIONS'
+    : (scene.chapterTitle || props.systemTitle || 'CORE SYSTEM OPERATIONS').toUpperCase();
+  const exhibitLabel = isBangladeshSwift
+    ? 'FORENSIC EXHIBIT: FX-2016-02'
+    : `FORENSIC EXHIBIT: ${scene.sceneId.toUpperCase()}`;
+  const chainOfCustodyLabel = isBangladeshSwift
+    ? 'CHAIN OF CUSTODY: BANGLADESH POLICE CID // MANDIANT'
+    : `VERIFICATION RECORD: ${(scene.chapterTitle || props.systemTitle).toUpperCase()}`;
 
   return (
-    <div className="w-[1920px] h-[1080px] bg-[#F8FAFC] flex items-center justify-center select-none relative overflow-hidden font-sans">
+    <div className="w-[1920px] h-[1080px] py-12 bg-[#F8FAFC] flex items-center justify-center select-none relative overflow-hidden font-sans">
       <div className="absolute w-[900px] h-[600px] bg-blue-100/40 rounded-full blur-[140px] pointer-events-none -top-20 left-1/2 -translate-x-1/2" />
 
       <div
@@ -93,8 +134,6 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
         style={{
           width: `${containerW}px`,
           height: `${containerH}px`,
-          transform: `scale(${cameraZoom})`,
-          transformOrigin: '50% 50%',
         }}
       >
         <div className="backdrop-blur-xl bg-white/85 border-b border-slate-200 px-10 py-5 flex items-center justify-between z-20">
@@ -108,21 +147,29 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
                   ARCHITECTURAL BLUEPRINT // PIPELINE DEPLOYMENT
                 </span>
                 <span className="text-[11px] font-mono text-slate-400">|</span>
-                <span className="text-[11px] font-mono text-slate-500 font-medium">MOTIJHEEL 10TH FLOOR OPERATIONS</span>
+                <span className="text-[11px] font-mono text-slate-500 font-medium truncate max-w-[420px]">
+                  {operationSubtitle}
+                </span>
               </div>
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight mt-1 font-heading">
-                {props.systemTitle || 'Bangladesh Bank // SWIFT Alliance Network Architecture'}
+                {props.systemTitle || scene.chapterTitle || 'System Architecture Blueprint'}
               </h1>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs font-mono">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse" />
+              <span
+                className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
+                style={{ opacity: pulseOpacity }}
+              />
               <span className="font-semibold">TOPOLOGY AUDIT ACTIVE</span>
             </div>
             {isFault ? (
-              <div className="px-3.5 py-1.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-mono font-bold flex items-center gap-2 animate-pulse">
+              <div
+                className="px-3.5 py-1.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-mono font-bold flex items-center gap-2"
+                style={{ opacity: pulseOpacity }}
+              >
                 <AlertTriangle className="w-4 h-4 text-red-600" />
                 <span>FATAL SEGREGATION BREACH</span>
               </div>
@@ -173,7 +220,12 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
               const isFlowFault = Boolean(
                 isFault && (props.blocks.find((b) => b.id === flow.from)?.isFaultPoint || idx >= 1)
               );
+              const isFlowActive =
+                spotlightFade > 0.2 &&
+                Boolean(activeBlockId && (flow.from === activeBlockId || flow.to === activeBlockId));
               const pulseColor = isFlowFault ? '#DC2626' : '#2563EB';
+              const edgeOpacity = spotlightFade > 0.2 ? (isFlowActive ? 1 : 0.4) : 0.85;
+              const edgeStrokeW = isFlowActive ? 3.5 : 2.5;
 
               const photonT = ((frame * 0.03 + idx * 0.33) % 1);
               const photonX = x1 + (x2 - x1) * photonT;
@@ -185,9 +237,10 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
                     y1={portY}
                     x2={leftLineEnd}
                     y2={portY}
-                    stroke="#CBD5E1"
-                    strokeWidth="2.5"
+                    stroke={isFlowActive ? (isFlowFault ? '#FCA5A5' : '#93C5FD') : '#CBD5E1'}
+                    strokeWidth={edgeStrokeW}
                     strokeLinecap="round"
+                    strokeOpacity={spotlightFade > 0.2 ? (isFlowActive ? 0.95 : 0.5) : 1}
                   />
                   <line
                     x1={x1}
@@ -195,10 +248,10 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
                     x2={leftLineEnd}
                     y2={portY}
                     stroke={pulseColor}
-                    strokeWidth="2.5"
+                    strokeWidth={edgeStrokeW}
                     strokeDasharray="8 10"
                     strokeDashoffset={-frame * 2.5}
-                    strokeOpacity="0.85"
+                    strokeOpacity={edgeOpacity}
                   />
 
                   <line
@@ -206,9 +259,10 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
                     y1={portY}
                     x2={x2}
                     y2={portY}
-                    stroke="#CBD5E1"
-                    strokeWidth="2.5"
+                    stroke={isFlowActive ? (isFlowFault ? '#FCA5A5' : '#93C5FD') : '#CBD5E1'}
+                    strokeWidth={edgeStrokeW}
                     strokeLinecap="round"
+                    strokeOpacity={spotlightFade > 0.2 ? (isFlowActive ? 0.95 : 0.5) : 1}
                   />
                   <line
                     x1={rightLineStart}
@@ -216,18 +270,19 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
                     x2={x2}
                     y2={portY}
                     stroke={pulseColor}
-                    strokeWidth="2.5"
+                    strokeWidth={edgeStrokeW}
                     strokeDasharray="8 10"
                     strokeDashoffset={-frame * 2.5}
-                    strokeOpacity="0.85"
+                    strokeOpacity={edgeOpacity}
                   />
 
                   {(photonX < leftLineEnd || photonX > rightLineStart) && (
                     <circle
                       cx={photonX}
                       cy={portY}
-                      r="4"
+                      r={isFlowActive ? 5.5 : 3.5}
                       fill={pulseColor}
+                      opacity={spotlightFade > 0.2 ? (isFlowActive ? 1 : 0.45) : 1}
                       filter="url(#laserGlowBlueprint)"
                     />
                   )}
@@ -245,22 +300,41 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
             const isFlowFault = Boolean(
               isFault && (props.blocks.find((b) => b.id === flow.from)?.isFaultPoint || idx >= 1)
             );
+            const isFlowActive =
+              spotlightFade > 0.2 &&
+              Boolean(activeBlockId && (flow.from === activeBlockId || flow.to === activeBlockId));
+
+            const badgeOpacity =
+              spotlightFade > 0.2 && !isFlowActive
+                ? interpolate(spotlightFade, [0.2, 1], [1, 0.65], {
+                    extrapolateLeft: 'clamp',
+                    extrapolateRight: 'clamp',
+                  })
+                : 1;
 
             return (
               <div
                 key={`badge-${idx}`}
                 className="absolute z-20 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none"
-                style={{ left: `${midX}px`, top: `${portY}px` }}
+                style={{ left: `${midX}px`, top: `${portY}px`, opacity: badgeOpacity }}
               >
                 <div
-                  className="rounded-full bg-white border border-slate-200/90 shadow-[0_6px_20px_-4px_rgba(15,23,42,0.1),0_0_0_1px_rgba(226,232,240,0.8)] flex items-center justify-center gap-2 px-3.5"
+                  className={cn(
+                    'rounded-full bg-white border flex items-center justify-center gap-2 px-3.5',
+                    isFlowActive
+                      ? isFlowFault
+                        ? 'border-red-400 ring-2 ring-red-500/25 shadow-[0_8px_24px_-4px_rgba(220,38,38,0.2)]'
+                        : 'border-blue-400 ring-2 ring-blue-500/25 shadow-[0_8px_24px_-4px_rgba(37,99,235,0.2)]'
+                      : 'border-slate-200/90 shadow-[0_6px_20px_-4px_rgba(15,23,42,0.1),0_0_0_1px_rgba(226,232,240,0.8)]'
+                  )}
                   style={{ width: `${badgeW}px`, height: `${badgeH}px` }}
                 >
                   <span
                     className={cn(
                       'w-2 h-2 rounded-full shrink-0',
-                      isFlowFault ? 'bg-red-500 animate-pulse' : 'bg-blue-600'
+                      isFlowFault ? 'bg-red-500' : 'bg-blue-600'
                     )}
+                    style={isFlowFault ? { opacity: pulseOpacity } : undefined}
                   />
                   <span className="text-[10px] font-mono font-bold text-slate-800 tracking-tight whitespace-nowrap truncate">
                     {flow.label}
@@ -285,24 +359,43 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
             });
 
             const isFaultBlock = Boolean(block.isFaultPoint) && isFault;
+            const isActiveNode = idx === activeIdx;
+            const settledOpacity = isActiveNode
+              ? 1
+              : interpolate(spotlightFade, [0, 1], [1, 0.68], {
+                  extrapolateLeft: 'clamp',
+                  extrapolateRight: 'clamp',
+                });
+            const focusScale = isActiveNode
+              ? interpolate(spotlightFade, [0, 1], [1.0, 1.03], {
+                  extrapolateLeft: 'clamp',
+                  extrapolateRight: 'clamp',
+                })
+              : 1.0;
+            const showActiveRing = isActiveNode && spotlightFade > 0.2;
             const IconComponent = getNodeIcon(block.title, block.subtitle);
 
             return (
               <div
                 key={block.id}
                 className={cn(
-                  'absolute rounded-2xl p-5 flex flex-col justify-between transition-all bg-white overflow-visible z-20',
-                  isFaultBlock
-                    ? 'border border-red-200 shadow-[0_12px_32px_-8px_rgba(220,38,38,0.12),0_0_0_1px_rgba(239,68,68,0.2)]'
-                    : 'border border-slate-200/90 shadow-[0_12px_32px_-8px_rgba(15,23,42,0.06),0_0_0_1px_rgba(226,232,240,0.8)]'
+                  'absolute rounded-2xl p-5 flex flex-col justify-between bg-white overflow-visible',
+                  showActiveRing ? 'z-30' : 'z-20',
+                  showActiveRing
+                    ? isFaultBlock
+                      ? 'border border-red-500 ring-4 ring-red-500/25 shadow-[0_16px_40px_-8px_rgba(220,38,38,0.28)]'
+                      : 'border border-blue-500 ring-4 ring-blue-500/25 shadow-[0_16px_40px_-8px_rgba(37,99,235,0.24)]'
+                    : isFaultBlock
+                      ? 'border border-red-200 shadow-[0_12px_32px_-8px_rgba(220,38,38,0.12),0_0_0_1px_rgba(239,68,68,0.2)]'
+                      : 'border border-slate-200/90 shadow-[0_12px_32px_-8px_rgba(15,23,42,0.06),0_0_0_1px_rgba(226,232,240,0.8)]'
                 )}
                 style={{
                   left: `${pos.x}px`,
                   top: `${pos.y}px`,
                   width: `${pos.w}px`,
                   height: `${pos.h}px`,
-                  opacity: blockSpring,
-                  transform: `scale(${interpolate(blockSpring, [0, 1], [0.94, 1.0])})`,
+                  opacity: blockSpring * settledOpacity,
+                  transform: `scale(${interpolate(blockSpring, [0, 1], [0.94, 1.0]) * focusScale})`,
                 }}
               >
                 {idx > 0 && (
@@ -375,14 +468,14 @@ export const SystemBlueprint: React.FC<SystemBlueprintProps> = ({ scene }) => {
 
         <div className="px-10 py-4 bg-slate-50/80 border-t border-slate-200 flex items-center justify-between text-xs font-mono text-slate-500">
           <div className="flex items-center gap-4">
-            <span className="font-semibold text-slate-700">FORENSIC EXHIBIT: FX-2016-02</span>
+            <span className="font-semibold text-slate-700">{exhibitLabel}</span>
             <span>•</span>
             <span>ISOLATION PROTOCOL: {isFault ? 'FAILED (HUB-BRIDGED)' : 'ENFORCED'}</span>
             <span>•</span>
             <span>LATENCY: 0.2ms</span>
           </div>
           <div className="flex items-center gap-2 text-slate-700 font-semibold">
-            <span>CHAIN OF CUSTODY: BANGLADESH POLICE CID // MANDIANT</span>
+            <span className="truncate max-w-[520px]">{chainOfCustodyLabel}</span>
           </div>
         </div>
       </div>

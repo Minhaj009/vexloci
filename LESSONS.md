@@ -77,6 +77,15 @@
   - **Trigger**: Redesigning UI components for 2026 modern minimalist aesthetic (Aceternity UI, 21st.dev, useplanes).
   - **Anti-Pattern**: Retaining clunky 2018 box geometry, squished `w-[1540px]` widths, and `mb-12` margins (leaving giant empty margins on screen), merely swapping hex colors without redesigning component anatomy, anchor sockets, and canvas space.
   - **Strict Invariant**: Always expand the scene container to `1800x960px` with 60px viewport margins. Rebuild cards as rich Bento components with anchor socket ports on card borders, embedded squircle icons, radial-masked dot grids, and 100% geometric alignment where connectors dock directly into ports and badge centers.
+- **Zero Corner Debug HUD Text, Beat Counters, or Scene Timers**:
+  - **Trigger**: Rendering global overlays (`KineticHUDOverlay.tsx`, `ForensicHUD.tsx`) on broadcast video frames.
+  - **Anti-Pattern**: Displaying corner developer telemetry (`ACT 1 // ...`, `BEAT 01/05 // ESTABLISH | SCENE_01 :: TEMPLATE_STATE`), bottom-center beat dot bars, or bottom-right scene timers (`00:01.8 / 00:31.0`) in video corners.
+  - **Strict Invariant**: Keep video corners completely clean of time counters, scene/template IDs, act banners, and beat indicator dots. Only subtle architectural corner registration brackets (`┌ ┐ └ ┘`) are permitted on outer margins.
+- **Unique, Verified Archival Media Ingestion (Zero Duplicates or Fictional Hits)**:
+  - **Trigger**: Fetching copyright-free archival images and building B-roll clips in `stage4_assets.py` and `universal_script_compiler.py`.
+  - **Anti-Pattern**: Using only 4 generic queries (`"<victim> building"`, `"<victim> headquarters"`, `"Adversary Syndicate"`), searching article text on `en.wikipedia.org` (which pulls TV screenshots or identical article thumbnails), and skipping URL/hash deduplication, resulting in the exact same 2–3 images repeating endlessly across the entire video.
+  - **Strict Invariant**: Every episode must harvest 10–12+ unique, high-resolution Wikimedia Commons photographs (`commons.wikimedia.org`, `gsrnamespace=6`, `filetype:bitmap`, excluding `.svg` logos and fictional media), enforced with strict URL + SHA-256 content-hash deduplication and minimum pixel dimensions (`>= 800px` wide) so no two `archival_img_*.png` or `broll_archival_*.mp4` assets are ever identical.
+
 
 
 

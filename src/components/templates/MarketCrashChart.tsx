@@ -6,6 +6,7 @@ import {
   TrendingDown,
 } from 'lucide-react';
 import { MarketCrashChartPropsSchema, SceneData } from '../../schemas/timeline.schema';
+import { useSceneBeat } from '../director/SceneBeatContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { BorderBeam } from '../ui/border-beam';
@@ -19,6 +20,7 @@ interface MarketCrashChartProps {
 export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const beatState = useSceneBeat();
 
   const props = MarketCrashChartPropsSchema.parse(scene.props);
 
@@ -129,13 +131,30 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
     { price: (currentVal * 0.96).toFixed(2), size: isCrash ? '280' : '49,000', pct: isCrash ? 1 : 78 },
   ];
 
+  const beatIndex = beatState ? beatState.beatIndex : 0;
+  const templateFocus =
+    beatState?.beat?.beatType === 'TEMPLATE_STATE'
+      ? beatState.beat.templateFocus
+      : undefined;
+  const rawTargetIdx =
+    beatState?.beat?.beatType === 'TEMPLATE_STATE'
+      ? (templateFocus?.targetIndex ?? beatIndex)
+      : beatIndex;
+  const activeOrderRowIdx = Math.min(askDepths.length - 1, Math.max(0, rawTargetIdx));
+  const activePhaseLabel =
+    beatState?.beat?.hudOverlay?.phaseBadge ??
+    (isCrash ? 'CRASH CASCADE // CIRCUIT BREAKER' : `PHASE 0${beatIndex + 1} // ORDER FLOW`);
+  const isThresholdHighlighted =
+    isCrash || Boolean(beatState && beatIndex >= Math.max(1, beatState.totalBeats - 1));
+  const pulseOpacity = 0.55 + 0.45 * Math.sin(frame * 0.25);
+
   return (
-    <div className="relative w-full h-full overflow-hidden bg-[#F8FAFC] select-none">
-      <div className="absolute top-0 left-0 right-0 z-20 backdrop-blur-md bg-white/95 border-b border-slate-200 px-10 py-4 flex items-center justify-between text-slate-900 shadow-xs">
+    <div className="relative w-full h-full overflow-hidden bg-[#F8FAFC] select-none flex flex-col pt-12 pb-10 px-10 gap-5">
+      <div className="relative z-20 backdrop-blur-md bg-white/95 border border-slate-200 rounded-2xl px-8 py-4 flex items-center justify-between text-slate-900 shadow-xs shrink-0">
         <div className="flex items-center gap-4">
           <div
             className={cn(
-              'p-2.5 rounded-lg border transition-colors duration-300',
+              'p-2.5 rounded-lg border',
               isCrash
                 ? 'bg-red-50 border-red-200 text-red-600'
                 : 'bg-slate-100 border-slate-200 text-slate-800'
@@ -154,6 +173,17 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
               <Badge variant="outline" className="font-mono text-[10px] text-slate-500 border-slate-200 bg-slate-50">
                 LIVE FEED // 30 FPS
               </Badge>
+              <Badge
+                variant="outline"
+                className={cn(
+                  'font-mono text-[10px] font-bold uppercase',
+                  isCrash
+                    ? 'text-rose-700 border-rose-200 bg-rose-50'
+                    : 'text-blue-700 border-blue-200 bg-blue-50'
+                )}
+              >
+                {activePhaseLabel}
+              </Badge>
             </div>
             <div className="flex items-baseline gap-3 mt-1">
               <h2 className="text-2xl font-mono font-bold text-slate-900 tracking-tight">
@@ -162,7 +192,8 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
               </h2>
               <Badge
                 variant={isCrash ? 'destructive' : 'cyan'}
-                className={cn('font-mono text-xs font-bold', isCrash && 'animate-pulse')}
+                className="font-mono text-xs font-bold"
+                style={isCrash ? { opacity: pulseOpacity } : undefined}
               >
                 {deltaPct}%
               </Badge>
@@ -173,10 +204,8 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
         <div className="flex items-center gap-6">
           <Badge
             variant={isCrash ? 'destructive' : 'default'}
-            className={cn(
-              'px-3 py-1 font-mono text-xs uppercase tracking-wider',
-              isCrash && 'animate-pulse'
-            )}
+            className="px-3 py-1 font-mono text-xs uppercase tracking-wider"
+            style={isCrash ? { opacity: pulseOpacity } : undefined}
           >
             {isCrash ? 'CIRCUIT BREAKER // TRADING HALT' : 'REAL-TIME EXECUTION FEED'}
           </Badge>
@@ -202,7 +231,7 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
         </div>
       </div>
 
-      <div className="absolute top-[88px] left-10 right-10 bottom-28 flex gap-6">
+      <div className="relative flex-1 min-h-0 flex gap-6">
         <div className="relative flex-1 rounded-2xl bg-white border border-slate-200/90 overflow-hidden shadow-[0_4px_24px_rgba(15,23,42,0.04)]">
           <svg className="w-full h-full overflow-visible" viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
             <defs>
@@ -268,8 +297,8 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
                 y1={thresholdY}
                 x2={padLeft + plotWidth}
                 y2={thresholdY}
-                stroke="#EF4444"
-                strokeWidth="1.8"
+                stroke={isThresholdHighlighted ? '#DC2626' : '#EF4444'}
+                strokeWidth={isThresholdHighlighted ? '2.4' : '1.8'}
                 strokeDasharray="6 4"
               />
               <rect
@@ -278,9 +307,9 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
                 width={260}
                 height={24}
                 rx={4}
-                fill="#FFFFFF"
-                stroke="#FCA5A5"
-                strokeWidth="1.2"
+                fill={isThresholdHighlighted ? '#FEF2F2' : '#FFFFFF'}
+                stroke={isThresholdHighlighted ? '#DC2626' : '#FCA5A5'}
+                strokeWidth={isThresholdHighlighted ? '1.8' : '1.2'}
               />
               <text
                 x={padLeft + plotWidth - 140}
@@ -402,7 +431,7 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
               }}
             >
               <div className="flex items-center gap-2 text-rose-600 font-mono font-bold text-xs">
-                <AlertTriangle className="w-4 h-4 animate-pulse" />
+                <AlertTriangle className="w-4 h-4" style={{ opacity: pulseOpacity }} />
                 <span>CIRCUIT BREAKER TRIGGERED</span>
               </div>
               <div className="text-xl font-mono font-black text-rose-600 mt-1">
@@ -447,16 +476,27 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
                 <span>VOLUME</span>
               </div>
               <div className="space-y-1">
-                {askDepths.map((ask, idx) => (
-                  <div key={idx} className="relative flex items-center justify-between px-2 py-0.5 rounded overflow-hidden">
+                {askDepths.map((ask, idx) => {
+                  const isFocusedRow = Boolean(beatState && idx === activeOrderRowIdx);
+                  return (
                     <div
-                      className="absolute inset-y-0 right-0 bg-rose-50 transition-all duration-200"
-                      style={{ width: `${ask.pct}%` }}
-                    />
-                    <span className="relative z-10 text-rose-700 font-medium">{ask.price}</span>
-                    <span className="relative z-10 text-slate-500 text-[10px]">{ask.size}</span>
-                  </div>
-                ))}
+                      key={idx}
+                      className={cn(
+                        'relative flex items-center justify-between px-2 py-0.5 rounded overflow-hidden border',
+                        isFocusedRow
+                          ? 'border-rose-400 ring-1 ring-rose-400/50 bg-rose-50/40'
+                          : 'border-transparent'
+                      )}
+                    >
+                      <div
+                        className="absolute inset-y-0 right-0 bg-rose-50"
+                        style={{ width: `${ask.pct}%` }}
+                      />
+                      <span className="relative z-10 text-rose-700 font-medium">{ask.price}</span>
+                      <span className="relative z-10 text-slate-500 text-[10px]">{ask.size}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -473,16 +513,27 @@ export const MarketCrashChart: React.FC<MarketCrashChartProps> = ({ scene }) => 
                 <span>VOLUME</span>
               </div>
               <div className="space-y-1">
-                {bidDepths.map((bid, idx) => (
-                  <div key={idx} className="relative flex items-center justify-between px-2 py-0.5 rounded overflow-hidden">
+                {bidDepths.map((bid, idx) => {
+                  const isFocusedRow = Boolean(beatState && idx === activeOrderRowIdx);
+                  return (
                     <div
-                      className="absolute inset-y-0 right-0 bg-blue-50 transition-all duration-200"
-                      style={{ width: `${bid.pct}%` }}
-                    />
-                    <span className="relative z-10 text-blue-700 font-medium">{bid.price}</span>
-                    <span className="relative z-10 text-slate-500 text-[10px]">{bid.size}</span>
-                  </div>
-                ))}
+                      key={idx}
+                      className={cn(
+                        'relative flex items-center justify-between px-2 py-0.5 rounded overflow-hidden border',
+                        isFocusedRow
+                          ? 'border-blue-400 ring-1 ring-blue-400/50 bg-blue-50/40'
+                          : 'border-transparent'
+                      )}
+                    >
+                      <div
+                        className="absolute inset-y-0 right-0 bg-blue-50"
+                        style={{ width: `${bid.pct}%` }}
+                      />
+                      <span className="relative z-10 text-blue-700 font-medium">{bid.price}</span>
+                      <span className="relative z-10 text-slate-500 text-[10px]">{bid.size}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

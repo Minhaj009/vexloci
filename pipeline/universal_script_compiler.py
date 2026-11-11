@@ -5,12 +5,243 @@ Weaves structured ForensicDossier facts into 24 verified narrative beats
 conforming to the 5 storytelling laws, guaranteeing 8-12 minutes broadcast duration (>= 1,350 words).
 """
 
+import re
 from typing import Any, Dict, List, Optional
 from pipeline.dossier_parser import ForensicDossier
 from pipeline.storytelling_engine import (
     inject_storytelling_contracts,
     NarrativeContractValidator,
 )
+
+_GENERIC_ENTITY_NAMES = {
+    "",
+    "target enterprise",
+    "target corporation",
+    "adversary syndicate",
+    "threat actor group",
+    "identified malicious entity",
+    "unknown",
+}
+
+_ENTITY_PHOTO_RULES: List[tuple[tuple[str, ...], List[str]]] = [
+    (("bangladesh bank", "motijheel", "dhaka"), [
+        "Bangladesh Bank building Motijheel Dhaka",
+        "Dhaka financial district Bangladesh",
+    ]),
+    (("federal reserve", "ny fed", "maiden lane"), [
+        "Federal Reserve Bank of New York Maiden Lane",
+    ]),
+    (("solaire", "manila", "rcbc", "philippines"), [
+        "Solaire Resort and Casino Manila Entertainment City",
+        "Makati Manila financial district skyline",
+    ]),
+    (("bitfinex",), [
+        "Bitcoin cryptocurrency physical coin",
+        "Cryptocurrency trading exchange chart",
+    ]),
+    (("bitgo", "multi-sig", "multisig", "hardware security"), [
+        "Hardware security module cryptography server",
+    ]),
+    (("bitcoin", "btc", "cryptocurrency", "blockchain", "cold wallet", "monero"), [
+        "Bitcoin hardware wallet cold storage",
+        "Cryptocurrency server farm data center",
+        "Lower Manhattan skyline New York",
+        "Wall Street New York Stock Exchange",
+    ]),
+    (("gold coin", "bullion"), ["Gold bullion coins vault"]),
+    (("doj", "department of justice", "attorney's office", "sdny"), [
+        "United States Department of Justice building Washington",
+    ]),
+    (("fbi",), ["J. Edgar Hoover Building FBI headquarters Washington"]),
+    (("irs", "internal revenue"), ["Internal Revenue Service building Washington"]),
+    (("sec ", "securities and exchange"), ["Securities and Exchange Commission Washington"]),
+    (("courthouse", "indictment", "guilty", "sentenced", "trial"), [
+        "Daniel Patrick Moynihan United States Courthouse New York",
+    ]),
+    (("manhattan", "wall street", "new york", "nyse"), [
+        "Lower Manhattan skyline New York",
+        "Wall Street New York Stock Exchange",
+    ]),
+    (("california", "silicon valley", "palo alto"), [
+        "Silicon Valley California technology campus",
+    ]),
+    (("knight capital", "kcg", "trading floor", "stock exchange"), [
+        "New York Stock Exchange trading floor",
+        "Jersey City waterfront financial district",
+    ]),
+    (("chicago", "cme"), ["Chicago Board of Trade Building"]),
+    (("wirecard", "aschheim", "munich"), [
+        "Munich skyline Germany",
+        "Aschheim Munich office building",
+    ]),
+    (("bafin", "frankfurt"), ["Frankfurt banking district skyline"]),
+    (("mt. gox", "mt gox", "shibuya", "tokyo"), [
+        "Shibuya Tokyo skyline Japan",
+        "Tokyo financial district skyscrapers",
+    ]),
+    (("colonial pipeline", "pipeline", "fuel", "refinery"), [
+        "Oil pipeline industrial infrastructure",
+        "Petroleum refinery industrial facility",
+    ]),
+    (("stuxnet", "natanz", "centrifuge", "uranium", "siemens"), [
+        "Gas centrifuge uranium enrichment cascade",
+        "Industrial Siemens PLC control cabinet",
+    ]),
+    (("ftx", "alameda", "bahamas", "nassau"), [
+        "Nassau Bahamas harbor skyline",
+        "Cryptocurrency market trading desk",
+    ]),
+    (("maersk", "notpetya", "shipping", "container"), [
+        "Container port shipping terminal cranes",
+    ]),
+    (("boeing", "737", "aircraft", "aviation", "faa"), [
+        "Boeing 737 MAX commercial aircraft",
+        "Commercial airliner cockpit instruments",
+    ]),
+    (("theranos", "blood", "edison"), [
+        "Clinical medical laboratory analyzer",
+    ]),
+    (("volkswagen", "diesel", "ecu"), [
+        "Automotive engine control unit circuit",
+    ]),
+    (("blackout", "power grid", "substation"), [
+        "Electrical power substation high voltage grid",
+    ]),
+    (("cyber", "ransomware", "malware", "server", "cloud", "backdoor", "data"), [
+        "Server rack data center",
+        "Fiber optic cables network switch",
+        "Cybersecurity operations center monitors",
+    ]),
+    (("bank", "reserve", "liquidity", "treasury", "vault"), [
+        "Federal Reserve Bank building Washington",
+        "Bank vault steel door",
+    ]),
+]
+
+_PILLAR_PHOTO_FALLBACKS: Dict[str, List[str]] = {
+    "CYBER_HEIST": [
+        "Server rack data center",
+        "Fiber optic cables network switch",
+        "Department of Justice building Washington",
+        "J. Edgar Hoover Building Washington",
+        "Daniel Patrick Moynihan United States Courthouse",
+        "Lower Manhattan skyline New York",
+        "Microchip circuit board macro",
+        "United States Capitol Washington",
+        "Wall Street New York",
+        "Federal Reserve Bank of New York building",
+        "New York Stock Exchange interior trading floor",
+        "Gold bullion coins vault",
+    ],
+    "FINANCIAL_COLLAPSE": [
+        "New York Stock Exchange interior trading floor",
+        "Wall Street New York",
+        "Lower Manhattan skyline New York",
+        "Federal Reserve Bank of New York building",
+        "Bank vault steel door",
+        "Securities and Exchange Commission Washington",
+        "Chicago Board of Trade Building",
+        "City of London financial district skyline",
+        "Frankfurt banking district skyline",
+        "United States Capitol Washington",
+        "Daniel Patrick Moynihan United States Courthouse",
+        "Gold bullion coins vault",
+    ],
+    "CORPORATE_FRAUD": [
+        "Securities and Exchange Commission Washington",
+        "Department of Justice building Washington",
+        "Daniel Patrick Moynihan United States Courthouse",
+        "Wall Street New York",
+        "Lower Manhattan skyline New York",
+        "Federal Reserve Bank of New York building",
+        "City of London financial district skyline",
+        "Bank vault steel door",
+        "United States Capitol Washington",
+        "Frankfurt banking district skyline",
+        "Server rack data center",
+        "Gold bullion coins vault",
+    ],
+    "CRITICAL_BUG": [
+        "Server rack data center",
+        "Microchip circuit board macro",
+        "Fiber optic cables network switch",
+        "Industrial control room monitors",
+        "Electrical power substation high voltage grid",
+        "Supercomputer cluster facility",
+        "United States Capitol Washington",
+        "Commercial airliner cockpit instruments",
+        "Semiconductor wafer cleanroom",
+        "Telecommunications tower infrastructure",
+        "Silicon Valley California technology campus",
+        "Department of Justice building Washington",
+    ],
+}
+
+
+def _truncate_clean(text: str, max_len: int) -> str:
+    cleaned = re.sub(r"\s+", " ", str(text or "")).strip()
+    if max_len <= 0 or not cleaned:
+        return ""
+    if len(cleaned) <= max_len:
+        return cleaned
+    if cleaned[max_len].isspace():
+        head = cleaned[:max_len].rstrip(" ,;:-/(")
+        return head or cleaned[:max_len].strip()
+    candidate = cleaned[:max_len]
+    if " " in candidate:
+        head = candidate.rsplit(" ", 1)[0].rstrip(" ,;:-/(")
+        if head:
+            return head
+    return candidate.rstrip(" ,;:-/(") or candidate
+
+
+def _is_generic_entity(name: str) -> bool:
+    cleaned = re.sub(r"\s+", " ", str(name or "")).strip().lower()
+    return not cleaned or cleaned in _GENERIC_ENTITY_NAMES
+
+
+def _build_media_search_queries(dossier: ForensicDossier) -> List[str]:
+    corpus = " ".join([
+        dossier.title or "",
+        dossier.target_victim or "",
+        dossier.perpetrator_adversary or "",
+        dossier.technical_vector or "",
+        dossier.smoking_gun_evidence or "",
+        dossier.executive_summary or "",
+        dossier.raw_text or "",
+    ])
+    corpus_lower = corpus.lower()
+    queries: List[str] = []
+    seen: set[str] = set()
+
+    def _add(q: str) -> None:
+        cleaned = re.sub(r'["“”\']+', "", re.sub(r"\s+", " ", q or "")).strip()
+        if not cleaned or _is_generic_entity(cleaned):
+            return
+        key = cleaned.lower()
+        if any(banned in key for banned in ("adversary syndicate", "threat actor group", "target enterprise", "identified malicious entity")):
+            return
+        if key not in seen:
+            seen.add(key)
+            queries.append(cleaned)
+
+    for keywords, rule_queries in _ENTITY_PHOTO_RULES:
+        if any(kw in corpus_lower for kw in keywords):
+            for rq in rule_queries:
+                _add(rq)
+                if len(queries) >= 12:
+                    return queries[:12]
+
+    if not _is_generic_entity(dossier.target_victim):
+        _add(dossier.target_victim)
+
+    pillar_fallbacks = _PILLAR_PHOTO_FALLBACKS.get(dossier.niche_pillar, _PILLAR_PHOTO_FALLBACKS["CYBER_HEIST"])
+    for fq in pillar_fallbacks:
+        _add(fq)
+        if len(queries) >= 12:
+            break
+
+    return queries[:12]
 
 
 def _build_bangladesh_bank_beats(video_id: str = "bangladesh_bank_heist") -> List[Dict[str, Any]]:
@@ -663,7 +894,11 @@ def _build_bangladesh_bank_beats(video_id: str = "bangladesh_bank_heist") -> Lis
     return scenes
 
 
-def _build_universal_factual_beats(dossier: ForensicDossier, video_id: str = "") -> List[Dict[str, Any]]:
+def _build_universal_factual_beats(
+    dossier: ForensicDossier,
+    video_id: str = "",
+    num_clips: int = 12,
+) -> List[Dict[str, Any]]:
     """
     Constructs a rich 24-scene forensic script for ANY topic from its ForensicDossier.
     Each scene delivers 3-4 detailed sentences (~55-65 words), guaranteeing >= 1,350 total words.
@@ -749,10 +984,17 @@ def _build_universal_factual_beats(dossier: ForensicDossier, video_id: str = "")
          f"{title} endures as a defining forensic case study in modern technological history. It established the permanent principle that in modern commerce, software architecture is physical infrastructure, and cyber resilience is the sole guarantee of institutional survival. The failure to secure the core payment rails cost {damage} and destroyed reputations built over decades. The lessons learned in the wake of the collapse continue to guide security architecture worldwide."),
     ]
 
+    clip_mod = max(1, num_clips)
     scenes: List[Dict[str, Any]] = []
+    archival_count = 0
     for idx, (act_num, title_text, narration) in enumerate(narratives):
         template = templates[idx]
-        props = _synthesize_dynamic_props(template, idx, victim, adversary, damage, vector, date, evidence, title, video_id)
+        if template == "ArchivalFootage":
+            clip_idx = archival_count % clip_mod
+            archival_count += 1
+        else:
+            clip_idx = idx % clip_mod
+        props = _synthesize_dynamic_props(template, idx, victim, adversary, damage, vector, date, evidence, title, video_id, clip_idx=clip_idx)
         scenes.append({
             "sceneId": f"scene_{idx + 1:02d}",
             "actNumber": act_num,
@@ -787,13 +1029,18 @@ def _synthesize_dynamic_props(
     evidence: str,
     title: str,
     video_id: str,
+    clip_idx: int = 0,
 ) -> Dict[str, Any]:
     """Generates topic-specific, non-Knight-Capital props for ANY template."""
     clean_slug = video_id or "investigation"
     if template == "ForensicDocument":
         is_article = scene_idx == 15
+        clean_title_up = _truncate_clean(title, 48).upper()
+        clean_evidence_up = _truncate_clean(evidence, 40).upper()
+        clean_ref_up = _truncate_clean(evidence, 35).upper()
+        clean_vector = _truncate_clean(vector, 80)
         return {
-            "documentTitle": f"OFFICIAL SPECIAL INVESTIGATION // {title.upper()[:48]}" if is_article else f"GOVERNMENT ENFORCEMENT ACTION // {evidence[:40].upper()}",
+            "documentTitle": f"OFFICIAL SPECIAL INVESTIGATION // {clean_title_up}" if is_article else f"GOVERNMENT ENFORCEMENT ACTION // {clean_evidence_up}",
             "sourceAgency": "GLOBAL INVESTIGATIVE DESK" if is_article else "REGULATORY OVERSIGHT COMMISSION",
             "dateStamp": f"{date.upper()} // FORENSIC EXHIBIT #{scene_idx + 1:02d}",
             "publicationName": "FINANCIAL TIMES" if is_article else None,
@@ -801,10 +1048,10 @@ def _synthesize_dynamic_props(
             "byline": "By Forensic Investigative Bureau // Special Report" if is_article else None,
             "articleImagePath": f"runs/{clean_slug}/assets/article_reuters.png" if is_article else None,
             "stampText": "VERIFIED EXHIBIT" if is_article else "CRITICAL ANOMALY",
-            "evidenceRef": f"EXHIBIT #{chr(65 + (scene_idx % 26))} // {evidence[:35].upper()}",
+            "evidenceRef": f"EXHIBIT #{chr(65 + (scene_idx % 26))} // {clean_ref_up}",
             "paragraphs": [
                 f"Regulatory authorities and independent forensic examiners confirmed that {victim} experienced an unprecedented operational compromise in {date}.",
-                f"The investigation established that {adversary} weaponized {vector[:80]} to initiate unauthorized transactions totaling {damage}.",
+                f"The investigation established that {adversary} weaponized {clean_vector} to initiate unauthorized transactions totaling {damage}.",
                 f"Internal supervisory controls failed to detect the breach until financial reconciliations revealed irreversible liabilities."
             ],
             "highlightPhrases": [damage],
@@ -816,12 +1063,12 @@ def _synthesize_dynamic_props(
             "hostname": f"{clean_slug[:12]}-core-gw01.internal",
             "filePath": f"/var/log/{clean_slug[:10]}/intrusion_telemetry.log",
             "telemetryTitle": "SECURITY TELEMETRY // INCIDENT AUDIT",
-            "pipelineLabel": f"TARGET: {victim[:28]}",
-            "queueLabel": f"THREAT: {adversary[:24]}",
+            "pipelineLabel": f"TARGET: {_truncate_clean(victim, 28)}",
+            "queueLabel": f"THREAT: {_truncate_clean(adversary, 24)}",
             "lines": [
                 {"text": f"./audit_trace.sh --target={clean_slug[:16]} --scan-memory", "type": "cmd"},
                 {"text": f"[INFO] Scanning core processes for unauthorized hooks in {victim}...", "type": "output"},
-                {"text": f"[WARN] Critical anomaly detected: {vector[:60]}", "type": "output"},
+                {"text": f"[WARN] Critical anomaly detected: {_truncate_clean(vector, 60)}", "type": "output"},
                 {"text": f"[CRIT] Unauthorized transaction instructions injected under valid credentials", "type": "error"},
                 {"text": f"[ALERT] Capital outflow velocity exceeded safe thresholds: {damage}", "type": "diff_add"},
                 {"text": f"[STATUS] Systemic failure confirmed. Initiating emergency forensic quarantine.", "type": "error"},
@@ -831,7 +1078,7 @@ def _synthesize_dynamic_props(
 
     elif template == "SystemBlueprint":
         return {
-            "systemTitle": f"{victim.upper()[:24]} // CORE INFRASTRUCTURE TOPOLOGY",
+            "systemTitle": f"{_truncate_clean(victim, 24).upper()} // CORE INFRASTRUCTURE TOPOLOGY",
             "blocks": [
                 {"id": "b1", "title": "Client Gateway", "subtitle": "Ingestion Pipeline", "isFaultPoint": False},
                 {"id": "b2", "title": "Processing Core", "subtitle": "Vulnerable Settlement Engine", "isFaultPoint": True},
@@ -879,9 +1126,9 @@ def _synthesize_dynamic_props(
     elif template == "NetworkTopology":
         return {
             "nodes": [
-                {"id": "victim_node", "label": victim[:22], "type": "bank", "status": "compromised"},
+                {"id": "victim_node", "label": _truncate_clean(victim, 22), "type": "bank", "status": "compromised"},
                 {"id": "proxy_node", "label": "Infiltration Proxy", "type": "server", "status": "compromised"},
-                {"id": "adversary_node", "label": adversary[:22], "type": "person", "status": "compromised"},
+                {"id": "adversary_node", "label": _truncate_clean(adversary, 22), "type": "person", "status": "compromised"},
                 {"id": "clearing_node", "label": "Primary Clearing Gateway", "type": "bank", "status": "normal"},
                 {"id": "offshore_node", "label": "Offshore Laundering Conduit", "type": "shell", "status": "compromised"},
             ],
@@ -896,11 +1143,11 @@ def _synthesize_dynamic_props(
 
     elif template == "CommsIntercept":
         return {
-            "platformName": f"{victim.upper()[:20]} // EMERGENCY INCIDENT DISPATCH",
+            "platformName": f"{_truncate_clean(victim, 20).upper()} // EMERGENCY INCIDENT DISPATCH",
             "channelOrSubject": "INCIDENT TRIAGE // WAR ROOM #01",
             "messages": [
                 {"sender": "Lead Security Engineer", "role": "Incident Commander", "time": "02:14:10 UTC", "body": f"Core settlement clusters refusing administrative override. Unauthorized transfers detected in {victim}."},
-                {"sender": "SOC Watch Officer", "role": "Network Defense", "time": "02:18:45 UTC", "body": f"Outbound routes saturated. Exfiltration vector identified as {vector[:60]}.", "highlight": "Exfiltration vector identified"},
+                {"sender": "SOC Watch Officer", "role": "Network Defense", "time": "02:18:45 UTC", "body": f"Outbound routes saturated. Exfiltration vector identified as {_truncate_clean(vector, 60)}.", "highlight": "Exfiltration vector identified"},
                 {"sender": "Infrastructure Director", "role": "Systems Admin", "time": "02:30:10 UTC", "body": f"Emergency stop requested. Total liability exposure estimated at {damage}."},
                 {"sender": "Legal Counsel", "role": "Compliance Officer", "time": "02:45:00 UTC", "body": "Perimeter severed. Mobilizing federal law enforcement task force."},
             ],
@@ -920,18 +1167,18 @@ def _synthesize_dynamic_props(
 
     elif template == "SplitAutopsy":
         return {
-            "leftTitle": f"PRE-INCIDENT {victim.upper()[:16]} CONTROLS",
+            "leftTitle": f"PRE-INCIDENT {_truncate_clean(victim, 16).upper()} CONTROLS",
             "rightTitle": "POST-INCIDENT FORENSIC REALITY",
             "leftMetrics": [
-                f"Target Entity: {victim[:28]}",
+                f"Target Entity: {_truncate_clean(victim, 28)}",
                 "Internal Security Audit: Declared Nominal",
                 "Perimeter Architecture: Assumed Compliant",
                 f"Reported Exposure: Below Alert Threshold",
             ],
             "rightMetrics": [
                 f"Actual Damage: {damage} Extracted",
-                f"Attributed Threat: {adversary[:26]}",
-                f"Root Exploit: {vector[:36]}",
+                f"Attributed Threat: {_truncate_clean(adversary, 26)}",
+                f"Root Exploit: {_truncate_clean(vector, 36)}",
                 "Final Outcome: Complete Regulatory Restructuring",
             ],
             "fontScale": 1.0,
@@ -942,7 +1189,7 @@ def _synthesize_dynamic_props(
             "startIsoTime": "2016-02-04T20:00:00Z",
             "endIsoTime": "2016-02-09T12:00:00Z",
             "milestones": [
-                {"timeLabel": "00:00:00", "eventTitle": "Initial Intrusion Established", "detail": f"{adversary[:30]} activates pre-staged access hooks"},
+                {"timeLabel": "00:00:00", "eventTitle": "Initial Intrusion Established", "detail": f"{_truncate_clean(adversary, 30)} activates pre-staged access hooks"},
                 {"timeLabel": "04:15:30", "eventTitle": "Telemetry Subversion Complete", "detail": "Audit trails suppressed; authentication gates bypassed"},
                 {"timeLabel": "08:30:00", "eventTitle": "Capital Exfiltration Wave", "detail": f"{damage} in instructions transmitted through payment rails"},
                 {"timeLabel": "14:00:00", "eventTitle": "Emergency Containment Freeze", "detail": "External interfaces severed after irreversible losses"},
@@ -951,11 +1198,10 @@ def _synthesize_dynamic_props(
         }
 
     elif template == "ArchivalFootage":
-        clip_idx = scene_idx % 4
         return {
             "mediaType": "video",
             "mediaPath": f"runs/{clean_slug}/assets/broll_archival_{clip_idx}.mp4",
-            "headline": f"{victim.upper()[:36]} // ARCHIVAL EVIDENCE",
+            "headline": f"{_truncate_clean(victim, 36).upper()} // ARCHIVAL EVIDENCE",
             "caption": f"Archival footage verifying the operational facilities of {victim} during the {date} investigation.",
             "provenanceSource": "EXHIBIT ARCHIVE [SOURCE: WIKIMEDIA COMMONS]",
             "licenseBadge": "PUBLIC DOMAIN // WIKIMEDIA REPOSITORY",
@@ -967,7 +1213,7 @@ def _synthesize_dynamic_props(
             "fgImagePath": f"runs/{clean_slug}/assets/fg_subject.png",
             "bgImagePath": f"runs/{clean_slug}/assets/bg_subject.png",
             "subjectName": f"{adversary} Key Operative",
-            "subjectRole": f"Primary Subject // {title[:32]}",
+            "subjectRole": f"Primary Subject // {_truncate_clean(title, 32)}",
             "quoteOrFact": f"Named in formal unsealed indictments for coordinating the {damage} attack against {victim}.",
             "fontScale": 1.0,
         }
@@ -988,25 +1234,15 @@ def compile_forensic_script(
     dossier: ForensicDossier,
     mode: str = "broadcast_long_form_8_12m",
     api_key: Optional[str] = None,
+    video_id: str = "",
 ) -> Dict[str, Any]:
-    # Check if Bangladesh Bank or generic
+    v_id = video_id or dossier.title.lower().replace(" ", "_")[:32]
     is_bb = "bangladesh" in dossier.title.lower() or "bangladesh" in dossier.target_victim.lower()
+    search_queries = _build_media_search_queries(dossier)
     if is_bb:
-        scenes = _build_bangladesh_bank_beats()
-        search_queries = [
-            "Bangladesh Bank building Motijheel Dhaka",
-            "Dhaka financial district Bangladesh",
-            "Federal Reserve Bank of New York Maiden Lane",
-            "Solaire Resort and Casino Manila Entertainment City",
-        ]
+        scenes = _build_bangladesh_bank_beats(video_id=v_id)
     else:
-        scenes = _build_universal_factual_beats(dossier)
-        search_queries = [
-            f"{dossier.target_victim} building",
-            f"{dossier.target_victim} headquarters",
-            f"{dossier.perpetrator_adversary}",
-            f"{dossier.title}",
-        ]
+        scenes = _build_universal_factual_beats(dossier, video_id=v_id, num_clips=len(search_queries))
 
     scenes = inject_storytelling_contracts(scenes, dossier.title)
 
