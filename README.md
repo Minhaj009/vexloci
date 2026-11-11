@@ -1,55 +1,74 @@
-# Vexloci // Forensic Video Engine
+# Vexloci Forensic Video Engine
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-brightgreen.svg)](#installation--prerequisites)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-brightgreen.svg)](#installation-and-prerequisites)
 [![Remotion 4.0](https://img.shields.io/badge/Render-Remotion%204.0-blueviolet.svg)](https://remotion.dev)
-[![TypeScript 5.0](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](#verification--testing)
+[![TypeScript 5.6](https://img.shields.io/badge/TypeScript-5.6-blue.svg)](#verification-and-testing)
 [![Agent-Native](https://img.shields.io/badge/AI%20Agents-Claude%20%7C%20Antigravity%20%7C%20Cursor%20%7C%20Codex-success.svg)](#autonomous-ai-agent-orchestration)
 
-> **Autonomous AI-Driven Investigative Documentary & Multi-Shorts Production Compiler**
+Vexloci compiles full-length 1080p30 forensic documentaries and 9:16 vertical shorts from a single topic prompt or Markdown dossier. The engine orchestrates investigative research, a 6-act script compiler, neural voiceover synthesis, Faster-Whisper word alignment, deduplicated Wikimedia Commons media ingestion, dynamic beat-level cutaways, headless Remotion rendering, sidechain audio mastering, and YouTube distribution packaging.
 
-Vexloci is an end-to-end autonomous video production engine engineered to compile broadcast-quality forensic documentaries on technological disasters, cyber heists, financial collapses, and institutional crimes. Given a single topic prompt, the engine orchestrates investigative research, multi-act scripting, neural voice synthesis, Whisper word alignment, public domain archival asset harvesting, 2.5D Ken Burns animation, 1080p60/1080p30 Remotion canvas rendering, sidechain audio ducking, and complete YouTube distribution packaging.
-
-Built with an **agent-first architecture**, Vexloci is designed to be executed out-of-the-box by any AI coding agent provider—including **Claude Code (`claude`)**, **Google Antigravity (`agy`)**, **Cursor**, **OpenCode**, **OpenAI Codex**, **Windsurf**, or custom LLM orchestration loops.
+It runs headlessly from the CLI with deterministic JSON stage artifacts, making it straightforward to drive from AI coding agents such as Claude Code (`claude`), Google Antigravity (`agy`), Cursor, OpenCode, or OpenAI Codex.
 
 ---
 
-## Visual Showcase // Engine Output Demo
+## Visual showcase
 
-![Vexloci Forensic Video Engine 10s Demo](docs/assets/vexloci_demo_10s.gif)
+![Vexloci 2026 Light Editorial Engine Demo](docs/assets/vexloci_demo_10s.gif)
 
-> *10-second multi-scene sequence compiled by Vexloci showing automated forensic document highlighting, terminal opcode replay, candlestick market crash charts, and transnational GeoIP trace mapping. Full 1080p sample available at [`docs/assets/vexloci_demo_10s.mp4`](docs/assets/vexloci_demo_10s.mp4).*
+*10-second sequence from the 2026 light editorial engine: `ForensicDocument` transitioning into `MidSceneCutaway` stat and split cards, Bento `SystemBlueprint` fault propagation, `MarketCrashChart` liquidation plunges, and quadrant-routed `GeoIpTraceMap` traces.*
 
-### Flagship Forensic Templates
+### Scene templates, Beat Director cutaways, and 9:16 Shorts
 
-| Forensic Evidence Docket | Terminal Replay & Opcode Exec |
+| ForensicDocument (Light Editorial) | SystemBlueprint (Aceternity Bento) |
 | :---: | :---: |
-| ![Forensic Document](docs/assets/preview_forensic_document.png) | ![Terminal Replay](docs/assets/preview_terminal_replay.png) |
-| *Unsealed evidence exhibits with kinetic chisel highlighters & case stamps* | *Syntax-highlighted terminal sessions & execution telemetry* |
+| ![Forensic Document](docs/assets/preview_forensic_document.png) | ![System Blueprint](docs/assets/preview_system_blueprint.png) |
+| *Unsealed evidence dockets, chisel highlights, and Reuters/DOJ article clippings* | *Bento topology nodes with border anchor ports and auto-wrapped SVG connector badges* |
 
-| Candlestick Market Crash | Transnational GeoIP Routing |
+| TerminalReplay | MarketCrashChart |
 | :---: | :---: |
-| ![Market Crash](docs/assets/preview_market_crash.png) | ![GeoIP Trace Map](docs/assets/preview_geoip_trace.png) |
-| *SVG financial candlestick plunges & real-time liquidity ledgers* | *Vector geospatial route vectors & hop coordinates* |
+| ![Terminal Replay](docs/assets/preview_terminal_replay.png) | ![Market Crash Chart](docs/assets/preview_market_crash.png) |
+| *Syntax-highlighted intrusion logs paired with live execution telemetry* | *SVG price plunges, margin call thresholds, and live L2 order book depth* |
+
+| GeoIpTraceMap (Quadrant Routed) | NetworkTopology |
+| :---: | :---: |
+| ![GeoIP Trace Map](docs/assets/preview_geoip_trace.png) | ![Network Topology](docs/assets/preview_network_topology.png) |
+| *Natural Earth vector projection with hemisphere-locked HUD slots and radar sweep* | *Directed entity graphs with fault-pulse rings and packet throughput readouts* |
+
+| CommsIntercept | SplitAutopsy |
+| :---: | :---: |
+| ![Comms Intercept](docs/assets/preview_comms_intercept.png) | ![Split Autopsy](docs/assets/preview_split_autopsy.png) |
+| *Reconstructed incident messages with inline audio decryption waveforms* | *Disclosed filings contrasted against audited forensic reality* |
+
+| Beat Director Split Cutaway (`MidSceneCutaway`) | Unified Branded Outro (`EndScreenOutro`) |
+| :---: | :---: |
+| ![Beat Cutaway](docs/assets/preview_beat_cutaway.png) | ![End Screen Outro](docs/assets/preview_endscreen_outro.png) |
+| *50/50 archival Wikimedia B-roll paired with animated `NumberTicker` stat cards* | *Clean Vexloci 20-second end-screen layout for YouTube card overlays* |
+
+<div align="center">
+  <img src="docs/assets/preview_short_vertical.png" alt="Vertical 9:16 Short Composition" width="320" />
+  <br />
+  <em>9:16 <code>ShortForensicComposition</code> with scaled exhibit card, case transcript box, kinetic captions, and bottom CTA pill.</em>
+</div>
 
 ---
 
-## Key Highlights
+## Recent engine upgrades
 
-- **Autonomous Agent-Native Runtime:** Non-interactive CLI with deterministic exit codes, JSON state files, and zero-prompt execution designed for Claude Code, Antigravity, Cursor, and Codex workers.
-- **Hardcoded 8–12 Minute Long-Form Documentaries:** Generates a universal 24-scene forensic arc across 6 acts (~1,250–1,450 words) delivering 9.5 to 11.2 minutes of broadcast runtime.
-- **Hardcoded 30–60 Second Vertical Shorts (9:16):** Automatically produces 3 vertical 1080x1920 shorts per documentary with mobile-safe kinetic captions and bottom call-to-action banners.
-- **Enterprise Broadcast Audio Mastering:** Edge-TTS / Kokoro neural voiceover mastered with 6-band parametric EQ, multiband compression, and `-14 LUFS` sidechain ducking over an atmospheric dark synth score.
-- **Full YouTube SEO & Metadata Distribution:** Compiles 3 high-CTR title variations, chapter timestamps, 30+ SEO tags, hashtags, pinned comments, and photorealistic **Nano Bana 2 Pro** thumbnail prompts for both 16:9 and 9:16 aspect ratios.
-- **Whisper Subtitles (.srt & .vtt):** Timecoded closed captions grouped into natural 4–7 word phrases for both the long-form video and every individual short.
-- **Automated Playwright DOM QA Gate:** Headless browser pre-flight audit that asserts zero visual element collisions between HUD meters, cards, and captions prior to Remotion rendering.
-- **Zero Decorative Jargon:** Clean, dark forensic visual aesthetic inspired by technical terminal feeds, unsealed judicial evidence dockets, and financial autopsy ledgers.
+1. **2026 Clean Light Editorial UI overhaul.** Replaced the legacy dark neon theme with a light editorial canvas (`#F8FAFC` / `#FFFFFF`), `#0F172A` slate typography, surgical cobalt (`#2563EB`), amber (`#D97706`), and crimson (`#DC2626`) accents across all 12 Remotion templates.
+2. **Dynamic Scene Beat Director (`pipeline/beat_director.py`, `pipeline/beat_alignment.py`, `src/components/director/`).** Uses dynamic programming (`_dp_partition_boundaries`) on sentences and Whisper word timings to segment each scene into `0.4s` to `8.5s` visual beats without splitting words or numeric phrases. Automatically injects `CUTAWAY_BROLL`, `CUTAWAY_STATCARD`, and `CUTAWAY_SPLIT` cutaways with `CUT`, `DISSOLVE`, `WHIP_PAN`, and `SCANLINE_GLITCH` transitions.
+3. **Zero corner debug HUDs and clean 16:9 broadcast frames.** Removed corner timers, act banners, and beat indicator bars from `KineticHUDOverlay` and `ForensicHUD`, leaving only subtle outer registration brackets and a `2px` top progress line. Long-form 16:9 renders (`MainForensicComposition`) keep the frame free of burned-in subtitles so YouTube uses native `.srt` and `.vtt` closed captions, while 9:16 shorts (`ShortForensicComposition`) retain kinetic lower-third captions.
+4. **Camera safety and zero-crop invariant (`CameraRig.tsx`).** Constrained camera zoom on data and diagram templates to `1.0` to `1.02` so headers, Y-axis labels, and peripheral nodes never clip off screen.
+5. **Universal script compiler and dossier parser (`pipeline/universal_script_compiler.py`, `pipeline/dossier_parser.py`).** Ingests Markdown or PDF dossiers or runs autonomous topic research to emit 24 topic-isolated scenes across 6 acts (~1,300 to 1,500 spoken words, 8 to 12 minutes) with zero cross-case stub leaks.
+6. **Unique Wikimedia Commons media ingestion (`pipeline/stage4_assets.py`).** Queries `commons.wikimedia.org` bitmap files (`filetype:bitmap`, filtering out `.svg` logos and non-photo hits) with strict URL and SHA-256 deduplication, `>= 800px` resolution filtering, luminance preservation, 18s Ken Burns B-roll synthesis, and TrueType investigative article clipping generation.
+7. **Humanized TTS phonetics and Whisper glossary alignment (`pipeline/stage2_audio.py`, `pipeline/stage3_align.py`).** Expands hex offsets, currency sums, dates, and double-zero patterns, keeps pronounceable acronyms (`SWIFT`, `NASDAQ`, `FINCEN`, `INTERPOL`) as natural words while spacing initialisms (`RCBC`, `OFAC`), and runs post-alignment glossary cleanup.
+8. **Shorts beat normalization and topic-guarded metadata (`pipeline/stage7_shorts.py`, `pipeline/youtube_metadata.py`).** Clips scene-relative word timings and `visualBeats` cleanly within `31s` to `58s` shorts, prevents cross-topic entity bleed, and generates dedicated 9:16 thumbnail prompts per short.
 
 ---
 
-## Autonomous AI Agent Orchestration
+## Autonomous AI agent orchestration
 
-Vexloci was engineered from day one as an **agentic software system**. Because every stage of the pipeline produces deterministic JSON manifests, handles fallbacks gracefully, and exposes a clean CLI interface, autonomous AI coding agents can plan, research, compile, and QA full documentary packages without human intervention.
+Every pipeline stage writes validated JSON and media artifacts under `runs/<video_id>/` and returns deterministic exit codes, allowing coding agents to plan, run, and inspect documentary builds without interactive prompts.
 
 ```mermaid
 flowchart LR
@@ -57,315 +76,244 @@ flowchart LR
     B -->|Stage 1..5 Artifacts| C["Playwright DOM QA Gate"]
     C -->|Pass Receipt| D["Headless Remotion Render"]
     D -->|Packaging| E["output/video_id/"]
-    E -->|Summary & Verification| A
+    E -->|Summary and Receipt| A
 ```
 
-### Supported AI Agent Providers
-- **Claude Code (`claude`):** Run `claude` in the workspace directory. Instruct Claude to investigate a historical disaster or supply case files to compile complete documentary packages.
-- **Google Antigravity (`agy`):** Execute agentic pair-programming workflows, orchestrate multi-subagent pipelines, and inspect rendered output frames.
-- **Cursor / Windsurf:** Use Composer or chat agents to script custom scene templates, adjust design tokens in `pipeline/config.py`, or trigger parallel rendering batches.
-- **OpenCode & OpenAI Codex:** Invoke background worker runs with non-interactive CLI flags across CI/CD or local dev environments.
-- **Custom Autonomous Loops:** Script overnight content compilers using simple shell scripts or Python runners.
+### Agent prompt recipe
 
-### Agent Prompt Recipes
-
-#### Recipe 1: End-to-End Autonomous Generation (Zero-Shot Topic)
-Give this prompt directly to your AI agent (Claude Code, Antigravity, Cursor):
+Give a prompt like this directly to Claude Code, Antigravity, Cursor, or Codex:
 
 ```text
-Run the Vexloci video compiler for the following incident:
-Topic: "The 2010 Flash Crash — 36 Minutes of Algorithmic Spoofing Chaos"
+Compile a Vexloci documentary package for:
+Topic: "The 2010 Flash Crash: 36 Minutes of Algorithmic Spoofing Chaos"
 Video ID: "flash_crash_2010"
 
-Instructions:
-1. Verify the Python and Node environment.
-2. Execute: uv run python run_engine.py --topic "The 2010 Flash Crash" --video-id "flash_crash_2010"
-3. Inspect output/flash_crash_2010/ and verify long_form/video.mp4, all 3 shorts, subtitles (.srt/.vtt), and youtube_metadata.txt exist.
-4. Report the final duration, file sizes, and verification receipt.
-```
-
-#### Recipe 2: Compiling from a Custom Investigative Research Docket
-When you want the agent to use proprietary research or detailed forensic notes:
-
-```text
-I have placed an investigative case file in examples/demo_story/research.md detailing the 2012 Knight Capital SMARS glitch.
-1. Review the timeline, code defects, and telemetry in the case file.
-2. Compile a broadcast documentary using:
-   uv run python run_engine.py --topic "Knight Capital $440M Algorithmic Glitch" --video-id "knight_capital_glitch"
-3. Run the Playwright DOM QA gate to prove zero layout collisions.
-4. Deliver the distribution metadata package.
+1. Run: uv run python run_engine.py --topic "The 2010 Flash Crash" --video-id "flash_crash_2010"
+2. Verify that output/flash_crash_2010/ contains long_form/video.mp4, subtitles (.srt and .vtt), youtube_metadata.txt, and 3 shorts.
+3. Report the compiled runtime, scene count, and output file sizes.
 ```
 
 ---
 
-## 7-Stage Production Pipeline
+## Seven-stage production pipeline
 
 ```mermaid
 flowchart TD
-    A[Topic Prompt or Case File] --> B[Stage 1: Research & 6-Act Script Compiler]
-    B --> C[Stage 2: Neural Vocal Synthesis & Broadcast EQ]
-    C --> D[Stage 3: Faster-Whisper int8 Word-Level Alignment]
-    D --> E[Stage 4: Wikimedia Ingestion, Dark LUT & Ken Burns B-Roll]
-    E --> F[Stage 5: Timeline Assembly & Playwright DOM QA Gate]
-    F --> G[Stage 6: Headless Remotion Render & -14 LUFS Audio Mixing]
-    G --> H[Packaging: SRT/VTT Subtitles & YouTube SEO Metadata]
+    A[Topic Prompt or Case Dossier] --> B[Stage 1: Dossier Parser and 6-Act Script Compiler]
+    B --> C[Stage 2: TTS Phonetic Normalization and Vocal Mastering]
+    C --> D[Stage 3: Faster-Whisper int8 Word Alignment]
+    D --> E[Stage 4: Wikimedia Commons Ingestion, Dark LUT and 18s Ken Burns]
+    E --> F[Stage 5: Beat Director, Timeline Assembly and DOM QA Gate]
+    F --> G[Stage 6: Headless Remotion Render and -14 LUFS Mixing]
+    G --> H[Packaging: SRT/VTT Subtitles and YouTube SEO Metadata]
     H --> I[Stage 7: Multi-Shorts 9:16 Vertical Engine]
-    I --> J[Production Release: output/video_id/]
+    I --> J[Production Package: output/video_id/]
 ```
 
-### Stage 1: Research & Universal Script Compiler (`pipeline/stage1_research.py`)
-Deconstructs any forensic, technological, or financial topic into a rigid 6-act dramatic arc:
-- **Act 1: The Cold Open & Anomaly Discovery** (Scenes 1–4) — High-tension opening metric, anomaly detection, initial indicator.
-- **Act 2: The Architectural Flaw & Infiltration** (Scenes 5–8) — Code defect, missing guardrail, unauthorized lateral access.
-- **Act 3: The Zero-Hour Execution & Cascade** (Scenes 9–12) — Trigger event, recursive execution loop, automated escalation.
-- **Act 4: Global Contagion & Intercepted Signals** (Scenes 13–16) — Multi-exchange contagion, emergency communications, sensor telemetry.
-- **Act 5: Financial Plunge & Liquidity Collapse** (Scenes 17–20) — Capital destruction, balance sheet impairment, emergency meetings.
-- **Act 6: Forensic Autopsy & Institutional Legacy** (Scenes 21–24) — Regulatory fines, permanent rule changes, criminal indictments.
+### Stage 1: Research and universal script compiler (`pipeline/stage1_research.py`)
+Parses local Markdown/PDF case dossiers via `dossier_parser.py` or compiles autonomous research into a 24-scene, 6-act arc via `universal_script_compiler.py`. `NarrativeContractValidator` verifies hook placement, causal transitions, active open loops, and stakes escalation across roughly 1,300 to 1,500 spoken words.
 
-*Hardcoded Delivery Formula:* Exactly 24 scenes (~55–65 words per scene; ~1,250–1,450 words total) delivering 9.5 to 11.2 minutes of continuous narration at 130–140 words per minute.
+### Stage 2: Neural vocal synthesis and mastering (`pipeline/stage2_audio.py`)
+Synthesizes voice stems using Microsoft Edge-TTS (`en-US-ChristopherNeural`, `rate: +3%`, `pitch: -1Hz`) or Kokoro ONNX (`kokoro-v0_19.onnx` with `am_adam` 70% / `bm_george` 30% blend). `normalize_narration_for_tts` expands hexadecimal addresses, currencies, dates, and double-zero numbers before FFmpeg applies a high-pass filter, parametric EQ, compression, and stereo widening.
 
-### Stage 2: Neural Vocal Synthesis & Broadcast EQ (`pipeline/stage2_audio.py`)
-- Synthesizes vocal stems using Microsoft Edge-TTS (`en-US-ChristopherNeural`, calibrated to `rate: +3%`, `pitch: -1Hz`) or local Kokoro ONNX (`am_adam` 70% / `bm_george` 30% neural blend).
-- Normalizes hexadecimal offsets (`0x8888`), financial sums (`$440M` -> "four hundred forty million dollars"), acronyms, and military timestamps.
-- Applies a 6-band parametric mastering vocal chain:
-  - 80Hz 18dB/octave high-pass filter (sub-rumble removal)
-  - 160Hz +1.5dB wide-bell boost (vocal chest resonance)
-  - 450Hz -2.0dB surgical notch (nasal mud removal)
-  - 2.8kHz +2.5dB articulation shelf (consonant clarity)
-  - 3:1 multiband compression with 30ms attack and 200ms release
-  - Micro-delay stereo widener (0.8ms Haas effect for spatial separation)
+### Stage 3: Forced word alignment (`pipeline/stage3_align.py`)
+Runs Faster-Whisper (`small.en`, `int8` on CPU) with `word_timestamps=True` and domain `initial_prompt` seeding, then applies `post_process_word_glossary` to fix proper nouns and acronyms in `03_words.json`.
 
-### Stage 3: Forced Word Alignment (`pipeline/stage3_align.py`)
-- Executes Faster-Whisper (`tiny.en` int8 quantized on CPU) to extract millisecond-accurate start and end boundaries for every word.
-- Produces `03_words.json` containing phonetic timestamps used to synchronize on-screen kinetic captions and timecoded `.srt`/`.vtt` subtitles.
+### Stage 4: Archival media and 2.5D assets (`pipeline/stage4_assets.py`)
+Harvests deduplicated bitmap photographs from Wikimedia Commons (`>= 800px` wide, SHA-256 hash-checked, filtered against logos and fictional media), applies OpenCV dark LUT grading with luminance floor checks, generates 18-second Ken Burns clips (`_KEN_BURNS_MOTIONS`), segments 2.5D subject cutouts with `rembg`, and renders TrueType article clippings.
 
-### Stage 4: Asset Ingestion, Dark LUT & Ken Burns B-Roll (`pipeline/stage4_assets.py`)
-- Queries Wikimedia Commons and MediaWiki REST APIs for public-domain historical photography, corporate headquarters, executive mugshots, and archival documents.
-- Applies OpenCV dark forensic 3D LUT grading (warm desaturation, obsidian contrast curve, cyan/teal shadow cast).
-- Generates 35-second slow-zoom Ken Burns motion sequences (`zoompan`) via FFmpeg.
-- Runs 2.5D background/foreground layer segmentation using `rembg` (`u2netp`) to separate subject cutouts from contextual backgrounds.
+### Stage 5: Beat Director, timeline assembly, and DOM QA (`pipeline/stage5_compile.py`)
+`compile_scene_visual_beats` groups words into `0.4s` to `8.5s` visual beats (`TEMPLATE_STATE`, `CUTAWAY_BROLL`, `CUTAWAY_STATCARD`, `CUTAWAY_SPLIT`), attaches topic-isolated props across the 12 Remotion templates, appends the 20-second `EndScreenOutro` at Act 6, and runs `verify_dom_qa_playwright` before writing `05_timeline.json`.
 
-### Stage 5: Timeline Assembly & DOM QA Gate (`pipeline/stage5_compile.py`)
-- Maps narration beats to 12 specialized Remotion templates based on narrative keyword semantics.
-- Launches a headless Playwright Chromium instance that loads every scene into a virtual DOM canvas, asserting:
-  - Zero overlapping bounding boxes between kinetic highlighters, HUD meters, and caption pills.
-  - Safe-zone boundary compliance ($X \ge 96\text{px}$, $Y \ge 72\text{px}$).
-  - Dynamic font scale clamping preventing text truncation.
+### Stage 6: Headless Remotion render and audio mixing (`pipeline/stage6_render.py`)
+Renders `MainForensicComposition` via Remotion CLI (`--gl=angle`, `--concurrency=4`), pads narration to full timeline duration (`apad`), applies sidechain ducking (`threshold=0.12`, `ratio=3.2`, `attack=30`, `release=450`) against `assets/music/bg_music_loop.wav`, and normalizes output to `-14 LUFS` / `-1.5 dBFS` true peak.
 
-### Stage 6: Headless Remotion Render & Audio Mixing (`pipeline/stage6_render.py`)
-- Executes Remotion CLI headless rendering (`MainForensicComposition`, `--gl=angle`, `--concurrency=4`).
-- Procedurally synthesizes or loops an atmospheric dark ambient synth score (`assets/music/bg_music_loop.wav`).
-- Sidechain ducking: Compresses background music by 3.2:1 with a 30ms attack and 450ms release whenever narration voiceover is present.
-- Masters the output audio stream strictly to `-14.0 LUFS` (EBU R128 broadcast standard) with a `-1.5 dBFS` true-peak ceiling.
-
-### Stage 7: Multi-Shorts Production Engine (`pipeline/stage7_shorts.py`)
-- Extracts 3 self-contained narrative packages strictly bounded between **30 and 60 seconds** (32s–58s):
-  - **Short 1: The Cold Open Hook** (Scenes 1–3)
-  - **Short 2: The Critical Flaw / Breach** (Scenes 6–8)
-  - **Short 3: The Liquidity Collapse / Autopsy** (Scenes 20–22)
-- Renders vertical 1080x1920 compositions via `ShortForensicComposition` in Remotion.
-- Centers visual cards with `scale(0.56)` and displays kinetic captions in the mobile-safe lower-third ($Y=1320\text{px}$).
-- Embeds a bottom call-to-action banner (`FULL INVESTIGATION AVAILABLE // Link In Pinned Comment & Description // WATCH FULL ▶`).
-- Slices synchronized audio stems, generates standalone vertical `.srt`/`.vtt` subtitles, and formats dedicated short metadata.
+### Stage 7: Multi-shorts vertical engine (`pipeline/stage7_shorts.py`)
+Builds 3 vertical `1080x1920` shorts bounded between `31s` and `58s` via `build_short_packages` and `normalize_short_scenes`, renders `ShortForensicComposition` with `scale(0.535)` exhibit framing, burned-in `KineticCaption` pills, case transcript logs, bottom CTA bars, sliced `.srt`/`.vtt` files, and per-short 9:16 thumbnail prompts.
 
 ---
 
-## 12 Cinematic Remotion Scene Templates
+## Remotion scene templates
 
-Every scene compiled by Vexloci is visually hosted by one of 12 purpose-built React/Remotion templates styled in an authentic dark forensic aesthetic:
-
-| Template Name | Component Path | Purpose & Visual Design |
+| Template Name | Component Path | Role in the documentary |
 | :--- | :--- | :--- |
-| **`ForensicDocument`** | [`src/components/templates/ForensicDocument.tsx`](src/components/templates/ForensicDocument.tsx) | Unsealed judicial evidence dockets, investigative newsprint, fluorescent chisel highlighters, and red case stamps. |
-| **`TerminalReplay`** | [`src/components/templates/TerminalReplay.tsx`](src/components/templates/TerminalReplay.tsx) | Syntax-highlighted CLI terminal logs, opcode hex memory dumps, and real-time command execution feeds. |
-| **`MarketCrashChart`** | [`src/components/templates/MarketCrashChart.tsx`](src/components/templates/MarketCrashChart.tsx) | SVG candlestick charts with cascading loss plunges, volume indicators, and delta exposure pills. |
-| **`GeoIpTraceMap`** | [`src/components/templates/GeoIpTraceMap.tsx`](src/components/templates/GeoIpTraceMap.tsx) | Transnational vector map with animated hop vectors, millisecond latency metrics, and IP coordinates. |
-| **`SplitAutopsy`** | [`src/components/templates/SplitAutopsy.tsx`](src/components/templates/SplitAutopsy.tsx) | Comparative balance-sheet ledgers contrasting "Disclosed State" vs "Forensic Reality" with red delta variance pills. |
-| **`SystemBlueprint`** | [`src/components/templates/SystemBlueprint.tsx`](src/components/templates/SystemBlueprint.tsx) | Technical architectural schematics, unmanaged switch wireframes, and data flow topologies. |
-| **`NetworkTopology`** | [`src/components/templates/NetworkTopology.tsx`](src/components/templates/NetworkTopology.tsx) | Directed node graphs illustrating lateral cyber intrusion and decentralized validator architectures. |
-| **`CommsIntercept`** | [`src/components/templates/CommsIntercept.tsx`](src/components/templates/CommsIntercept.tsx) | Reconstructed encrypted chat sessions (Signal, Telegram, IRC, Bloomberg Terminal chat). |
-| **`ChronoTickingClock`** | [`src/components/templates/ChronoTickingClock.tsx`](src/components/templates/ChronoTickingClock.tsx) | High-tension countdown timers with millisecond dials, incident countdowns, and acoustic sub-bass sweeps. |
-| **`ArchivalFootage`** | [`src/components/templates/ArchivalFootage.tsx`](src/components/templates/ArchivalFootage.tsx) | MediaWiki historical photo plates with slow-pan Ken Burns animation, vignette shading, and provenance badges. |
-| **`ParallaxCutout25D`** | [`src/components/templates/ParallaxCutout25D.tsx`](src/components/templates/ParallaxCutout25D.tsx) | Multi-plane 2.5D camera rig panning across foreground subject cutouts over deep blurred backgrounds. |
-| **`EndScreenOutro`** | [`src/components/templates/EndScreenOutro.tsx`](src/components/templates/EndScreenOutro.tsx) | Hardcoded YouTube 20-second end-screen card layout with interactive subscriber reticle and case docket seal. |
+| `ForensicDocument` | [ForensicDocument.tsx](src/components/templates/ForensicDocument.tsx) | Unsealed judicial exhibits, animated highlighter sweeps, case stamps, and TrueType news clippings. |
+| `TerminalReplay` | [TerminalReplay.tsx](src/components/templates/TerminalReplay.tsx) | Line-by-line intrusion shell logs alongside throughput counters and saturation bars. |
+| `MarketCrashChart` | [MarketCrashChart.tsx](src/components/templates/MarketCrashChart.tsx) | Animated SVG valuation plunge curves, liquidation thresholds, and L2 order book depth. |
+| `GeoIpTraceMap` | [GeoIpTraceMap.tsx](src/components/templates/GeoIpTraceMap.tsx) | Natural Earth vector map with quadrant-routed HUD cards, curved hop arcs, and radar sweep. |
+| `SplitAutopsy` | [SplitAutopsy.tsx](src/components/templates/SplitAutopsy.tsx) | Side-by-side comparison of pre-incident disclosures against audited losses. |
+| `SystemBlueprint` | [SystemBlueprint.tsx](src/components/templates/SystemBlueprint.tsx) | Bento architecture nodes with border anchor ports and auto-wrapped SVG connector pills. |
+| `NetworkTopology` | [NetworkTopology.tsx](src/components/templates/NetworkTopology.tsx) | Directed entity graphs with fault-pulse rings and lateral intrusion logs. |
+| `CommsIntercept` | [CommsIntercept.tsx](src/components/templates/CommsIntercept.tsx) | Reconstructed chat and dispatch transcripts with inline decryption waveforms. |
+| `ChronoTickingClock` | [ChronoTickingClock.tsx](src/components/templates/ChronoTickingClock.tsx) | Millisecond UTC incident clock synchronized to milestone reveal cards. |
+| `ArchivalFootage` | [ArchivalFootage.tsx](src/components/templates/ArchivalFootage.tsx) | Rotating Wikimedia Commons Ken Burns clips with provenance badges. |
+| `ParallaxCutout25D` | [ParallaxCutout25D.tsx](src/components/templates/ParallaxCutout25D.tsx) | Foreground/background segmented 2.5D subject plates with depth drift. |
+| `EndScreenOutro` | [EndScreenOutro.tsx](src/components/templates/EndScreenOutro.tsx) | Branded 20-second Vexloci outro frame with dual YouTube end-screen card placeholders. |
 
 ---
 
-## Output Architecture
+## Output package layout
 
-Every documentary compiled by Vexloci produces a self-contained, modular release package inside `output/<video_id>/`:
+Every run writes a self-contained output bundle to `output/<video_id>/`:
 
-```
+```text
 output/<video_id>/
 ├── long_form/
-│   ├── video.mp4                 # 1080p30 16:9 Full Forensic Documentary (~9.5-11.2 min)
-│   ├── audio.wav                 # Mastered Vocal Track (48kHz PCM WAV)
-│   ├── subtitles.srt             # Timecoded SubRip Closed Captions
-│   ├── subtitles.vtt             # WebVTT Closed Captions (HTML5 standard)
-│   ├── youtube_metadata.json     # Machine-readable distribution metadata
-│   └── youtube_metadata.txt      # Ready-to-copy Titles, Description, Chapters, Tags & Thumbnail Prompts
+│   ├── video.mp4                 # 1080p30 16:9 clean documentary (no burned-in subtitles)
+│   ├── audio.wav                 # Mastered narration track
+│   ├── subtitles.srt             # SubRip closed captions
+│   ├── subtitles.vtt             # WebVTT closed captions
+│   ├── youtube_metadata.json     # Structured SEO metadata and thumbnail prompts
+│   └── youtube_metadata.txt      # Ready-to-paste YouTube titles, chapters, tags, and prompts
 ├── shorts/
-│   ├── short_01/                 # Act 1 Hook Short (Peak Incident Cut, 30s-60s)
-│   │   ├── short.mp4             # 1080x1920 Vertical 9:16 Video (Kinetic Captions + Bottom CTA Bar)
-│   │   ├── audio_slice.wav       # Synchronized Audio Stem
-│   │   ├── subtitles.srt             # Synchronized Short Subtitles
-│   │   ├── subtitles.vtt             # Synchronized WebVTT
-│   │   └── metadata.txt          # Title, Description, Hashtags & Pinned Comment
-│   ├── short_02/                 # Act 2/3 Technical Flaw & Breach Short (30s-60s)
-│   └── short_03/                 # Act 5/6 Liquidity Collapse & Balance Sheet Short (30s-60s)
-├── assets/                       # Wikimedia photos, 35s Ken Burns b-rolls & 2.5D subject cutouts
-└── timeline/                     # Compiled 6-act scripts, word alignments, and layout manifests
+│   ├── short_01/                 # 31s-58s vertical 9:16 package (short.mp4, audio_slice.wav, .srt/.vtt, metadata.txt)
+│   ├── short_02/
+│   └── short_03/
+├── assets/                       # Graded archival photos, 18s Ken Burns B-roll clips, and 2.5D cutouts
+└── timeline/                     # 01_script.json, 02_scene_timings.json, 03_words.json, 05_timeline.json
 ```
 
 ---
 
-## Installation & Prerequisites
+## Installation and prerequisites
 
 ### Prerequisites
-- **Operating System:** Windows 10/11, macOS, or Linux
-- **Python:** 3.11+
-- **Node.js:** 18+ (with npm)
-- **FFmpeg:** Must be installed and accessible on system `PATH`
-- **uv:** Recommended modern Python package manager (`pip install uv` or `winget install astral-sh.uv`)
+- Windows 10/11, macOS, or Linux
+- Python 3.10+ (managed with `uv`)
+- Node.js 18+ and npm
+- FFmpeg and `ffprobe` available on system `PATH`
 
-### Setup Instructions
+### Setup
 
 ```bash
-# 1. Clone repository
 git clone https://github.com/Minhaj009/vexloci.git
 cd vexloci
 
-# 2. Install Python dependencies via uv
 uv sync
-
-# 3. Install Node & Remotion dependencies
 npm install
 
-# 4. Verify system toolchain & typecheck
-uv run python -c "import torch, cv2, rembg; print('Python toolchain OK')"
+uv run python -c "import cv2, rembg, faster_whisper; print('Python toolchain OK')"
 npx tsc --noEmit
 ```
 
 ---
 
-## CLI Usage Guide
+## CLI usage
 
-### 1. Compile from a Topic String
-To compile an entire investigative documentary package (long-form + 3 vertical shorts):
-
-```bash
-# Set PYTHONPATH and run master orchestrator
-export PYTHONPATH="." # On Windows PowerShell: $env:PYTHONPATH="."
-uv run python run_engine.py --topic "The 2012 Knight Capital $440M Trading Glitch" --video-id "knight_capital_glitch"
-```
-
-### 2. Fast Render (Skip Shorts)
-If you only need the 16:9 full-length documentary:
+Run the full 7-stage compiler (long-form 16:9 + 3 vertical 9:16 shorts):
 
 ```bash
-uv run python run_engine.py --topic "The 2016 Bitfinex 120,000 Bitcoin Hack" --no-shorts
+# Linux/macOS: export PYTHONPATH="."
+# PowerShell:  $env:PYTHONPATH="."
+uv run python run_engine.py --topic "The 2016 Bitfinex 120,000 Bitcoin Hack" --video-id "bitfinex_bitcoin_hack"
 ```
 
-### 3. Resume / Accelerated Pipeline (`--skip-existing`)
-To iterate on visual styles without re-synthesizing voiceover or re-running Whisper alignment:
+Skip rendering vertical shorts (`--no-shorts`):
 
 ```bash
-uv run python run_engine.py --topic "The 2012 Knight Capital $440M Trading Glitch" --video-id "knight_capital_glitch" --skip-existing
+uv run python run_engine.py --topic "The 2012 Knight Capital $440M Trading Glitch" --no-shorts
 ```
 
-### CLI Arguments Reference
+Resume from cached artifacts in `runs/<video_id>/` (`--skip-existing`):
+
+```bash
+uv run python run_engine.py --topic "The 2016 Bitfinex 120,000 Bitcoin Hack" --video-id "bitfinex_bitcoin_hack" --skip-existing
+```
+
+### CLI arguments
+
 | Flag | Type | Description | Default |
 | :--- | :--- | :--- | :--- |
-| `--topic` | `str` *(required)* | Topic headline (e.g. `"The 2016 Bangladesh Bank $81M Cyber-Heist"`) | None |
-| `--video-id` | `str` | Custom folder name under `output/<video_id>/` | Auto-slugified from topic |
-| `--no-shorts` | `flag` | Skip rendering vertical 9:16 shorts | `False` |
-| `--skip-existing` | `flag` | Reuse existing stage artifacts in `runs/<video_id>` to accelerate resume | `False` |
-| `--api-key` | `str` | Optional Gemini/OpenAI API key for dynamic Wikipedia research crawl | `None` |
+| `--topic` | `str` (required) | Topic headline to research and compile | None |
+| `--mode` | `str` | Pipeline execution mode (`broadcast_long_form_8_12m`) | `broadcast_long_form_8_12m` |
+| `--video-id` | `str` | Custom directory slug under `output/<video_id>/` | Auto-slugified from topic |
+| `--no-shorts` | `flag` | Skip rendering 9:16 vertical shorts | `False` |
+| `--skip-existing` | `flag` | Reuse completed stage artifacts in `runs/<video_id>/` | `False` |
+| `--api-key` | `str` | Optional LLM API key for dynamic research crawl | `None` |
 
 ---
 
-## Custom Investigative Case Files (`examples/demo_story/`)
+## Custom investigative case files
 
-In addition to autonomous topic generation, Vexloci supports ingesting structured investigative case files formatted in Markdown. An authentic investigative reference file is provided at [`examples/demo_story/research.md`](examples/demo_story/research.md).
-
-It documents how to structure forensic telemetry for the engine:
-1. **Executive Forensic Summary:** Incident window, verified monetary casualties, share volumes, and regulatory penalties.
-2. **Chronological Zero-Hour Timeline:** Second-by-second incident progression with timestamps.
-3. **Technical Defect & Architecture Autopsy:** Code defect analysis, routing diagrams, and failed rollback analysis.
-4. **Market Contagion & Liquidity Casualty:** Broken trades, circuit breakers, and price distortion.
-5. **Institutional Legacy & Regulatory Impact:** SEC/FINRA enforcement actions, statutory changes (e.g., Regulation SCI).
+You can feed structured forensic notes into Stage 1 via Markdown or PDF dossiers. See [`examples/demo_story/research.md`](examples/demo_story/research.md) for a complete reference case file covering the 2012 Knight Capital SMARS incident.
 
 ---
 
-## Verification & Testing
+## Verification and testing
 
-Verify that your local environment passes all unit tests and TypeScript contracts:
+Run the Python test suite and TypeScript typechecker:
 
 ```bash
-# 1. Run Python unit test suite
-export PYTHONPATH="." # On Windows PowerShell: $env:PYTHONPATH="."
-uv run python -m unittest tests/test_endscreen_outro.py tests/test_metadata_and_subtitles.py tests/test_storytelling_framework.py
-
-# 2. Verify Remotion & TypeScript schemas
+# PowerShell: $env:PYTHONPATH="."
+uv run python -m unittest discover -s tests -p "test_*.py" -v
 npx tsc --noEmit
 ```
 
 ---
 
-## Hardware Budgets & Resource Profiling
+## Hardware budgets
 
-- **Peak VRAM Safety Budget:** Bounded strictly below **2.5 GB peak VRAM**.
-- **CPU Friendly:** Faster-Whisper runs on CPU via `int8` quantization. Vocal mastering and OpenCV LUT grading operate with zero GPU dependency.
-- **Remotion Hardware Acceleration:** Remotion renders via ANGLE/Vulkan headless OpenGL (`--gl=angle`) utilizing multi-threaded CPU workers (`--concurrency=4`).
-- **Memory Defense:** Python sub-processes invoke garbage collection and CUDA memory cache flushes between stages.
+- **VRAM ceiling:** Capped at `6.0 GB` in `pipeline/config.py` (`HARDWARE_SAFETY`), flushing PyTorch/CUDA caches via `flush_cuda_memory()` after heavy stages.
+- **CPU execution:** Faster-Whisper runs `small.en` in `int8` on CPU; audio mastering and OpenCV LUT grading run on CPU.
+- **Remotion rendering:** Uses headless Chromium with `--gl=angle` and `--concurrency=4`.
 
 ---
 
-## Repository Layout
+## Repository layout
 
-```
+```text
 vexloci/
-├── .gitignore                   # Multi-runtime ignore manifest (Node, Python, temp runs)
-├── ARCHITECTURE.md              # Living architecture & domain boundary specification
-├── LESSONS.md                   # Living engineering reinforcement memory
-├── LICENSE                      # MIT Open Source License
-├── README.md                    # Master developer & AI agent documentation
-├── SPEC.md                      # System behavioral specification
-├── package.json                 # Node & Remotion dependency definitions
-├── pyproject.toml               # Python project configuration & toolchain dependencies
-├── remotion.config.ts           # Remotion render configuration & OpenGL flags
-├── run_engine.py                # Master CLI orchestrator entrypoint
-├── tailwind.config.js           # Tailwind CSS theme tokens & HUD scanline animations
-├── tsconfig.json                # TypeScript strict compilation configuration
-├── docs/                        # Architectural specifications & visual showcase assets
-│   ├── assets/                  # 10s animated GIF demo, MP4 sample, and template preview cards
-│   ├── STORYTELLING_FRAMEWORK.md# 6-act dramatic progression invariants
-│   └── VISUAL_PRODUCTION_SPEC.md# 1080p motion grammar & safe-zone constraints
-├── examples/                    # Sample investigative dossiers & case files
-│   └── demo_story/              # Knight Capital $440M trading glitch reference file
-├── pipeline/                    # 7-stage Python pipeline modules
-│   ├── config.py                # Design tokens, mastering params & hardware budgets
-│   ├── stage1_research.py       # Topic research & 6-act universal script compiler
-│   ├── stage2_audio.py          # Neural voice synthesis (Edge-TTS / Kokoro) & mastering
-│   ├── stage3_align.py          # Faster-Whisper int8 forced word alignment
-│   ├── stage4_assets.py         # MediaWiki harvesting, dark LUT & Ken Burns b-roll
-│   ├── stage5_compile.py        # Timeline compiler & Playwright DOM QA verification gate
-│   ├── stage6_render.py         # Remotion headless render & -14 LUFS sidechain ducking
-│   ├── stage7_shorts.py         # Vertical 9:16 multi-shorts production engine
-│   ├── storytelling_engine.py   # Narrative arc contracts & pacing rules
-│   ├── subtitles.py             # SRT/VTT timecoded closed caption generator
-│   └── youtube_metadata.py      # SEO titles, chapters, tags & Nano Bana 2 Pro prompts
-├── src/                         # Remotion React component ecosystem
-│   ├── MainComposition.tsx     # 16:9 Long-form master composition
-│   ├── Root.tsx                 # Remotion root registry & Google Fonts loader
-│   ├── ShortComposition.tsx    # 9:16 Vertical shorts composition
-│   ├── components/              # 12 Forensic templates & shared camera rigs / HUD overlays
-│   ├── schemas/                 # Zod timeline schemas & prop validators
-│   └── styles/                  # Tailwind CSS styling & CRT scanline overlays
-└── tests/                       # Automated regression & contract verification suite
+├── .gitignore                        # Ignores ephemeral runs, outputs, models, videos, and local dossiers
+├── ARCHITECTURE.md                   # System invariants and domain boundaries
+├── LESSONS.md                        # Distilled engineering constraints and regressions
+├── LICENSE                           # MIT License
+├── README.md                         # Engine documentation and visual showcase
+├── SPEC.md                           # Behavioral specification
+├── package.json                      # Node and Remotion dependencies
+├── pyproject.toml                    # Python dependencies and project metadata
+├── remotion.config.ts                # Remotion CLI render configuration
+├── run_engine.py                     # 7-stage master CLI orchestrator
+├── tailwind.config.js                # Light editorial theme tokens
+├── tsconfig.json                     # TypeScript compiler configuration
+├── docs/                             # Specs and README preview graphics
+│   ├── assets/                       # 10s demo GIF and template PNG previews
+│   ├── STORYTELLING_FRAMEWORK.md     # 6-act dramatic pacing contract
+│   └── VISUAL_PRODUCTION_SPEC.md     # Motion grammar and safe-zone specification
+├── examples/demo_story/              # Reference investigative dossier
+├── pipeline/                         # Python stage-gate modules
+│   ├── audio_synth.py                # Procedural SFX and ambient synth fallback
+│   ├── beat_alignment.py             # Sentence segmentation and word-pause grouping
+│   ├── beat_director.py              # DP beat clustering and cutaway planner
+│   ├── config.py                     # Paths, mastering params, and VRAM budget
+│   ├── dossier_parser.py             # Markdown/PDF forensic dossier extractor
+│   ├── stage1_research.py            # Stage 1 research and script compiler wrapper
+│   ├── stage2_audio.py               # Phonetic normalization, TTS, and EQ mastering
+│   ├── stage3_align.py               # Faster-Whisper forced word alignment and glossary
+│   ├── stage4_assets.py              # Deduplicated Wikimedia Commons ingestion and LUTs
+│   ├── stage5_compile.py             # Timeline assembly, Beat Director integration, DOM QA
+│   ├── stage6_render.py              # Remotion render and -14 LUFS sidechain audio mux
+│   ├── stage7_shorts.py              # 9:16 multi-shorts slicer, normalizer, and renderer
+│   ├── storytelling_engine.py        # Narrative pacing and contract validator
+│   ├── subtitles.py                  # Timecoded .srt and .vtt subtitle generator
+│   ├── universal_script_compiler.py  # 24-scene topic-isolated script and prop compiler
+│   ├── utils_vram.py                 # Garbage collection and CUDA cache flush helpers
+│   └── youtube_metadata.py           # Topic-guarded SEO titles, chapters, tags, and prompts
+├── src/                              # Remotion React templates and director runtime
+│   ├── MainComposition.tsx           # 16:9 clean long-form master composition
+│   ├── Root.tsx                      # Remotion composition registry and font loader
+│   ├── ShortComposition.tsx          # 9:16 vertical short composition with kinetic captions
+│   ├── components/director/          # SceneDirector, MidSceneCutaway, KineticHUDOverlay, context
+│   ├── components/shared/            # CameraRig, AtmosphericStage, ForensicHUD, KineticCaption
+│   ├── components/templates/         # 12 forensic visual templates
+│   ├── components/ui/                # Bento cards, BorderBeam, NumberTicker, RadarSweep, badges
+│   ├── lib/                          # Media path resolution and class helpers
+│   ├── schemas/timeline.schema.ts    # Zod contracts shared with Python timeline compiler
+│   └── styles/global.css             # Tailwind base styles
+└── tests/                            # Automated Python regression suite
 ```
 
 ---
 
-## License & Fair Use
-The software and engine code are licensed under the [MIT License](LICENSE). Archival assets retrieved dynamically via MediaWiki are subject to their respective Creative Commons or Public Domain licenses. Documentaries compiled by this engine are designed for educational, investigative, and historical analysis purposes under fair use guidelines.
+## License and fair use
+
+The Vexloci engine code is licensed under the [MIT License](LICENSE). Archival media fetched from Wikimedia Commons remains subject to each file's Creative Commons or Public Domain license.
